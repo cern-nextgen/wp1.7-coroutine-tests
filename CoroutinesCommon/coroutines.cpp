@@ -18,7 +18,7 @@ public:
    // manages the state of the coroutine. Created when coroutine is called.
    using handle_type = std::coroutine_handle<promise_type>;
 
-   explicit CoTask(const std::coroutine_handle<promise_type>& handle) : handle_{handle} {
+   explicit CoTask(const handle_type& handle) : handle_{handle} {
    }
 
    ~CoTask() {
