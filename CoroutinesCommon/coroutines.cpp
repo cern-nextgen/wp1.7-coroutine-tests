@@ -112,7 +112,7 @@ struct Promise<T, void> : public PromiseBase {
       return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
    }
 
-   auto yield_value(T x) {
+   auto yield_value(const T& x) {
       x_ = x;
       return std::suspend_always{};
    }
@@ -130,7 +130,7 @@ struct Promise<void, U> : public PromiseBase {
       return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
    }
 
-   void return_value(U y) {
+   void return_value(const U& y) {
       y_ = y;
    }
 };
