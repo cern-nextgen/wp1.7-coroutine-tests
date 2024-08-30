@@ -79,7 +79,7 @@ struct Promise : public PromiseBase {
 
    // Creates coroutine object returned to the caller of the coroutine.
    auto get_return_object() {
-      return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
+      return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
    }
 
    auto yield_value(const T& x) {
@@ -96,7 +96,7 @@ struct Promise : public PromiseBase {
 template <>
 struct Promise<void, void> : public PromiseBase {
    auto get_return_object() {
-      return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
+      return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
    }
 
    void return_void() {
@@ -109,7 +109,7 @@ struct Promise<T, void> : public PromiseBase {
    T x_;
 
    auto get_return_object() {
-      return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
+      return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
    }
 
    auto yield_value(const T& x) {
@@ -127,7 +127,7 @@ struct Promise<void, U> : public PromiseBase {
    U y_;
 
    auto get_return_object() {
-      return CoTask<Promise>{std::coroutine_handle<Promise>::from_promise(*this)};
+      return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
    }
 
    void return_value(const U& y) {
