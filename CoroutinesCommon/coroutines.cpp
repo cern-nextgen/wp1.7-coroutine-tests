@@ -24,10 +24,20 @@ public:
 
    CoTask(const CoTask&) = delete;
 
-   CoTask(CoTask&& ct) noexcept : handle_{std::exchange(ct.handle_, {})} {
+   CoTask(CoTask&& ct) noexcept : handle_{std::exchange(ct.handle_, nullptr)} {
    }
 
    CoTask& operator=(const CoTask&) = delete;
+
+   CoTask& operator=(CoTask&& ct) {
+      if(this != &ct) {
+         if(handle_) {
+            handle_.destroy();
+         }
+         handle_ = std::exchange(ct.handle_, nullptr);
+      }
+      return *this;
+   }
 
    ~CoTask() {
       if(handle_) {
@@ -57,7 +67,8 @@ private:
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct PromiseBase {
+class PromiseBase {
+public:
    // Determines whether routine starts eagerly or lazily.
    auto initial_suspend() {
       return std::suspend_always{};
@@ -76,10 +87,18 @@ struct PromiseBase {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename T = void, typename U = void>
-struct Promise : public PromiseBase {
-   T x_;
-   U y_;
+using EmptyCoYield = void;
+using EmptyCoReturn = void;
+
+
+template <typename T = EmptyCoYield, typename U = EmptyCoReturn>
+class Promise : protected PromiseBase {
+   friend CoTask<Promise>;
+
+public:
+   using PromiseBase::final_suspend;
+   using PromiseBase::initial_suspend;
+   using PromiseBase::unhandled_exception;
 
    // Creates coroutine object returned to the caller of the coroutine.
    auto get_return_object() {
@@ -94,11 +113,20 @@ struct Promise : public PromiseBase {
    void return_value(const U& y) {
       y_ = y;
    }
+
+private:
+   T x_;
+   U y_;
 };
 
 
 template <>
-struct Promise<void, void> : public PromiseBase {
+class Promise<EmptyCoYield, EmptyCoReturn> : protected PromiseBase {
+public:
+   using PromiseBase::final_suspend;
+   using PromiseBase::initial_suspend;
+   using PromiseBase::unhandled_exception;
+
    auto get_return_object() {
       return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
    }
@@ -109,8 +137,13 @@ struct Promise<void, void> : public PromiseBase {
 
 
 template <typename T>
-struct Promise<T, void> : public PromiseBase {
-   T x_;
+class Promise<T, EmptyCoReturn> : protected PromiseBase {
+   friend CoTask<Promise>;
+
+public:
+   using PromiseBase::final_suspend;
+   using PromiseBase::initial_suspend;
+   using PromiseBase::unhandled_exception;
 
    auto get_return_object() {
       return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
@@ -123,12 +156,20 @@ struct Promise<T, void> : public PromiseBase {
 
    void return_void() {
    }
+
+private:
+   T x_;
 };
 
 
 template <typename U>
-struct Promise<void, U> : public PromiseBase {
-   U y_;
+class Promise<EmptyCoYield, U> : protected PromiseBase {
+   friend CoTask<Promise>;
+
+public:
+   using PromiseBase::final_suspend;
+   using PromiseBase::initial_suspend;
+   using PromiseBase::unhandled_exception;
 
    auto get_return_object() {
       return CoTask<Promise>{CoTask<Promise>::handle_type::from_promise(*this)};
@@ -137,11 +178,10 @@ struct Promise<void, U> : public PromiseBase {
    void return_value(const U& y) {
       y_ = y;
    }
+
+private:
+   U y_;
 };
-
-
-using EmptyCoYield = void;
-using EmptyCoReturn = void;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////

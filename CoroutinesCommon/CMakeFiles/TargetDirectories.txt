@@ -1,0 +1,3 @@
+/home/slobod/Documents/CERN/wp1.7-coroutine-tests/CoroutinesCommon/CMakeFiles/coroutines.dir
+/home/slobod/Documents/CERN/wp1.7-coroutine-tests/CoroutinesCommon/CMakeFiles/edit_cache.dir
+/home/slobod/Documents/CERN/wp1.7-coroutine-tests/CoroutinesCommon/CMakeFiles/rebuild_cache.dir
