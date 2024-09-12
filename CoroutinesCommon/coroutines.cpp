@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <utility>
 
 
 // coroutine interface
@@ -21,15 +22,18 @@ public:
    explicit CoTask(const handle_type& handle) : handle_{handle} {
    }
 
+   CoTask(const CoTask&) = delete;
+
+   CoTask(CoTask&& ct) noexcept : handle_{std::exchange(ct.handle_, {})} {
+   }
+
+   CoTask& operator=(const CoTask&) = delete;
+
    ~CoTask() {
       if(handle_) {
          handle_.destroy();
       }
    }
-
-   // consider supporting move semantics
-   CoTask(const CoTask&) = delete;
-   CoTask& operator=(const CoTask&) = delete;
 
    bool resume() const {
       if(!handle_ || handle_.done()) {
@@ -194,7 +198,7 @@ int main() {
       }
       std::cout << cpf.get_result() << '\n';
    }
-
+   std::cout << '\n';
 
    return EXIT_SUCCESS;
 }
