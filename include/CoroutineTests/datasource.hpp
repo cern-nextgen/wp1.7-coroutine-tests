@@ -7,6 +7,10 @@
 
 namespace CoroutineTests {
 
+// Coroutine that pushes data to outside.
+// Doesn't return a value, doesn't yield. Rethrows exceptions on get.
+// Effectively for producing data from the coroutine co_yield could be used, but
+// here a more generic approach using only co_await is exercised.
 template <typename T>
 class [[nodiscard]] DataSource {
     public:
@@ -37,7 +41,7 @@ class [[nodiscard]] DataSource {
         }
         return *this;
     }
-
+    // resume coroutine and get the value
     T get() {
         if (m_coroutine) {
             if (!m_coroutine.done()) {
@@ -57,7 +61,9 @@ class [[nodiscard]] DataSource {
 
 template <typename T>
 struct DataSource<T>::promise_type {
+    // storage for exceptions thrown in the coroutine
     std::exception_ptr exception;
+    // storage for the latest value to be pushed to outside
     T current_output{};
 
     // required by coroutines
@@ -74,15 +80,21 @@ struct DataSource<T>::promise_type {
     void return_void() {}
 };
 
+// Simple awaiter that allows to receive data from the coroutine.
+// co_await OutputAwaiter{some_value};
+// This could be potentially replaced by just co_yield
 template <typename T>
 struct OutputAwaiter {
     OutputAwaiter(T value) : value(value) {}
     T value;
+    // don't resume immediately
     bool await_ready() { return false; }
+    // copy data from awaiter to the promise of coroutine that suspended
     void await_suspend(
         std::coroutine_handle<typename DataSource<T>::promise_type> h) {
         h.promise().current_output = value;
     }
+    // nothing special on resume
     void await_resume() {}
 };
 

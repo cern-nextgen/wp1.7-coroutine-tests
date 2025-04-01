@@ -6,6 +6,8 @@
 
 namespace CoroutineTests {
 
+// Coroutine that receives data from outside.
+// Doesn't return a value, doesn't yield. Rethrows exceptions on put.
 template <typename T>
 class [[nodiscard]] DataSink {
     public:
@@ -36,7 +38,7 @@ class [[nodiscard]] DataSink {
         }
         return *this;
     }
-
+    // copy data to the coroutine and resume it
     void put(T value) {
         if (m_coroutine && !m_coroutine.done()) {
             m_coroutine.promise().current_input = value;
@@ -53,7 +55,9 @@ class [[nodiscard]] DataSink {
 
 template <typename T>
 struct DataSink<T>::promise_type {
+    // storage for exceptions thrown in the coroutine
     std::exception_ptr exception;
+    // storage for the latest value received from outside
     T current_input{};
 
     // required by coroutines
@@ -61,9 +65,8 @@ struct DataSink<T>::promise_type {
         return {DataSink::handle_type::from_promise(*this)};
     }
     // called on coroutine start
-    std::suspend_never initial_suspend() {
-        return {};
-    }  // start immediately and follow to first co await
+    // resume immediately and proceed to first co_await
+    std::suspend_never initial_suspend() { return {}; }
     // called on coroutine completion
     std::suspend_always final_suspend() noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
@@ -72,13 +75,19 @@ struct DataSink<T>::promise_type {
     void return_void() {}
 };
 
+// Simple await that allows to push data to the coroutine.
+// T received = co_await InputAwaiter<T>{};
 template <typename T>
 struct InputAwaiter {
     using handle_type =
         std::coroutine_handle<typename DataSink<T>::promise_type>;
+    // storage for the handle of a coroutine that suspended on co_await
     handle_type m_coroutine;
+    // don't resume immediately
     bool await_ready() { return false; }
+    // copy handle to the coroutine that suspended on co_await
     void await_suspend(handle_type h) { m_coroutine = h; }
+    // resume the coroutine and return the value taken from promise
     T await_resume() { return m_coroutine.promise().current_input; }
 };
 
