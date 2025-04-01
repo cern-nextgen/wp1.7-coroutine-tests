@@ -9,7 +9,7 @@ namespace CoroutineTests {
 namespace detail {
 
 // Simple coroutine wrapper that returns a value lazily or eagerly.
-// Co await and co yield are disabled, only co return is allowed.
+// co_yield is disabled, only co_return is allowed.
 // No custom allocator is used. Exceptions are caught and rethrown.
 template <typename T, bool is_lazy>
 class [[nodiscard]] MaybeLazy {
@@ -43,7 +43,7 @@ class [[nodiscard]] MaybeLazy {
         return *this;
     }
 
-    T get() {
+    T get() const {
         if (!m_coroutine.done()) {
             m_coroutine.resume();
         }
@@ -67,7 +67,7 @@ struct MaybeLazy<T, is_lazy>::promise_type {
         return {MaybeLazy<T, is_lazy>::handle_type::from_promise(*this)};
     }
     // called on coroutine start
-    auto initial_suspend() {
+    auto initial_suspend() const {
         if constexpr (is_lazy) {
             return std::suspend_always{};  // suspend execution
         } else {
@@ -75,14 +75,12 @@ struct MaybeLazy<T, is_lazy>::promise_type {
         }
     }
     // called on coroutine completion
-    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // called on co_yield
     std::suspend_always yield_value(T value) = delete;  // no co yield allowed
     // called on (implicit or explicit) co_return or co_return void. Conflicts
     // return_void.
     void return_value(T value) { current_value = std::move(value); }
-    // disable co_await inside coroutine
-    void await_transform() = delete;
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
 };

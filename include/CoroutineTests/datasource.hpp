@@ -42,7 +42,7 @@ class [[nodiscard]] DataSource {
         return *this;
     }
     // resume coroutine and get the value
-    T get() {
+    T get() const {
         if (m_coroutine) {
             if (!m_coroutine.done()) {
                 m_coroutine.resume();
@@ -71,13 +71,13 @@ struct DataSource<T>::promise_type {
         return {DataSource::handle_type::from_promise(*this)};
     }
     // called on coroutine start
-    std::suspend_always initial_suspend() { return {}; }
+    std::suspend_always initial_suspend() const { return {}; }
     // called on coroutine completion
-    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return_void
-    void return_void() {}
+    void return_void() const {}
 };
 
 // Simple awaiter that allows to receive data from the coroutine.
@@ -88,14 +88,14 @@ struct OutputAwaiter {
     OutputAwaiter(T value) : value(value) {}
     T value;
     // don't resume immediately
-    bool await_ready() { return false; }
+    bool await_ready() const { return false; }
     // copy data from awaiter to the promise of coroutine that suspended
     void await_suspend(
         std::coroutine_handle<typename DataSource<T>::promise_type> h) {
         h.promise().current_output = value;
     }
     // nothing special on resume
-    void await_resume() {}
+    void await_resume() const {}
 };
 
 }  // namespace CoroutineTests

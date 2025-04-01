@@ -10,10 +10,10 @@ namespace CoroutineTests {
 // Simple generator that yields values of type T.
 // The generator is a range and can be used in range-based for loops or standard
 // algorithms.
-// Doesn't support co_await inside the coroutine or nesting of coroutines. Uses
-// default memory allocation.
+// Uses default memory allocation.
 template <typename T>
-class [[nodiscard]] Generator : public std::ranges::view_interface<Generator<T>> {
+class [[nodiscard]] Generator
+    : public std::ranges::view_interface<Generator<T>> {
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
@@ -44,14 +44,14 @@ class [[nodiscard]] Generator : public std::ranges::view_interface<Generator<T>>
     }
 
     // begin and end required by view_interface
-    struct Iter;
-    Iter begin() {
+    class Iter;
+    Iter begin() const {
         if (m_coroutine) {
             m_coroutine.resume();
         }
         return Iter{m_coroutine};
     }
-    std::default_sentinel_t end() { return {}; }
+    std::default_sentinel_t end() const { return {}; }
 
     private:
     handle_type m_coroutine;
@@ -66,16 +66,14 @@ struct Generator<T>::promise_type {
         return {Generator<T>::handle_type::from_promise(*this)};
     }
     // called on coroutine start
-    std::suspend_always initial_suspend() { return {}; }
+    std::suspend_always initial_suspend() const { return {}; }
     // called on coroutine completion
-    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // called on co_yield
     std::suspend_always yield_value(T value) {
         current_value = std::move(value);
         return {};
     }
-    // disable co_await inside coroutine
-    void await_transform() = delete;
     // called on (implicit or explicit) co_return or co_return_void
     void return_void() {}
     // acts as a catch block for exceptions thrown in the coroutine
@@ -95,7 +93,7 @@ class Generator<T>::Iter {
     explicit Iter(const Generator<T>::handle_type coroutine)
         : m_coroutine{coroutine} {}
 
-        // Resume the coroutine and check if exception was thrown
+    // Resume the coroutine and check if exception was thrown
     Iter& operator++() {
         m_coroutine.resume();
         if (m_coroutine.promise().exception) {
