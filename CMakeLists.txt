@@ -11,6 +11,7 @@ add_library(CoroutineTests INTERFACE)
 target_include_directories(
   CoroutineTests INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
                         $<INSTALL_INTERFACE:include/>)
+target_compile_options(CoroutineTests INTERFACE -Werror -Wall -Wextra -Wpedantic)
 
 option(BUILD_EXAMPLES "Build example programs" ON)
 if(BUILD_EXAMPLES)
