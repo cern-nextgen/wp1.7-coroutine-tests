@@ -6,6 +6,8 @@
 
 namespace CoroutineTests {
 
+// Simple coroutine that can be manually resumed.
+// Doesn't return a value, doesn't yield. Rethrows exceptions on resume.
 class [[nodiscard]] Task {
     public:
     struct promise_type;  // typedef required by coroutines
@@ -35,8 +37,10 @@ class [[nodiscard]] Task {
         }
         return *this;
     }
-    void resume();
-    bool done() const { return m_coroutine.done(); }
+    // resume the coroutine from outside
+    inline void resume();
+    // check if finished from outside
+    inline bool done() const { return m_coroutine.done(); }
 
     private:
     handle_type m_coroutine;
@@ -44,6 +48,7 @@ class [[nodiscard]] Task {
 
 
 struct Task::promise_type {
+    // storage for exceptions thrown in the coroutine
     std::exception_ptr exception;
     // required by coroutines
     Task get_return_object() {
