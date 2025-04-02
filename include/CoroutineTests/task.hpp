@@ -38,14 +38,13 @@ class [[nodiscard]] Task {
         return *this;
     }
     // resume the coroutine from outside
-    inline void resume();
+    inline void resume() const;
     // check if finished from outside
     inline bool done() const { return m_coroutine.done(); }
 
     private:
     handle_type m_coroutine;
 };
-
 
 struct Task::promise_type {
     // storage for exceptions thrown in the coroutine
@@ -55,16 +54,16 @@ struct Task::promise_type {
         return {Task::handle_type::from_promise(*this)};
     }
     // called on coroutine start
-    std::suspend_always initial_suspend() { return {}; }
+    std::suspend_always initial_suspend() const { return {}; }
     // called on coroutine completion
-    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return_void
-    void return_void() {}
+    void return_void() const {}
 };
 
-inline void Task::resume() {
+inline void Task::resume() const {
     if (!m_coroutine.done()) {
         m_coroutine.resume();
     }

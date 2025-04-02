@@ -39,7 +39,7 @@ class [[nodiscard]] DataSink {
         return *this;
     }
     // copy data to the coroutine and resume it
-    void put(T value) {
+    void put(T value) const {
         if (m_coroutine && !m_coroutine.done()) {
             m_coroutine.promise().current_input = value;
             m_coroutine.resume();
@@ -66,13 +66,13 @@ struct DataSink<T>::promise_type {
     }
     // called on coroutine start
     // resume immediately and proceed to first co_await
-    std::suspend_never initial_suspend() { return {}; }
+    std::suspend_never initial_suspend() const { return {}; }
     // called on coroutine completion
-    std::suspend_always final_suspend() noexcept { return {}; }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return_void
-    void return_void() {}
+    void return_void() const {}
 };
 
 // Simple await that allows to push data to the coroutine.
@@ -84,11 +84,11 @@ struct InputAwaiter {
     // storage for the handle of a coroutine that suspended on co_await
     handle_type m_coroutine;
     // don't resume immediately
-    bool await_ready() { return false; }
+    bool await_ready() const { return false; }
     // copy handle to the coroutine that suspended on co_await
     void await_suspend(handle_type h) { m_coroutine = h; }
     // resume the coroutine and return the value taken from promise
-    T await_resume() { return m_coroutine.promise().current_input; }
+    T await_resume() const { return m_coroutine.promise().current_input; }
 };
 
 }  // namespace CoroutineTests
