@@ -12,5 +12,7 @@ add_executable(datasink datasink.cpp)
 target_link_libraries(datasink PRIVATE CoroutineTests)
 add_executable(nestabletask nestabletask.cpp)
 target_link_libraries(nestabletask PRIVATE CoroutineTests)
+add_executable(event event.cpp)
+target_link_libraries(event PRIVATE CoroutineTests)
 
 add_executable(coroutines coroutines.cpp)
