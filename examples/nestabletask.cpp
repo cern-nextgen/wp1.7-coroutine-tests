@@ -4,7 +4,7 @@
 #include <iostream>
 #include <thread>
 
-struct AsyncMockup {
+struct AsyncAPIMockup {
     std::chrono::milliseconds delay;
     bool await_ready() const noexcept { return false; }
     void await_suspend(std::coroutine_handle<> handle) const noexcept {
@@ -19,9 +19,9 @@ struct AsyncMockup {
 
 CoroutineTests::NestableTask inner_task() {
     std::cout << "Inner task resumed 0\n";
-    co_await AsyncMockup{std::chrono::milliseconds(2500)};
+    co_await AsyncAPIMockup{std::chrono::milliseconds(2500)};
     std::cout << "Inner task resumed 1\n";
-    co_await AsyncMockup{std::chrono::milliseconds(1500)};
+    co_await AsyncAPIMockup{std::chrono::milliseconds(1500)};
     std::cout << "Inner task resumed 2\n";
     co_return;
 }
