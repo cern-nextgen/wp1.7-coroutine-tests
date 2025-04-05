@@ -59,6 +59,8 @@ class [[nodiscard]] NestableTask {
 struct NestableTask::promise_type {
     // storage for exceptions thrown in the coroutine
     std::exception_ptr exception;
+    // handle to the parent coroutine if the coroutine has one
+    handle_type m_parent;
     // required by coroutines
     NestableTask get_return_object() {
         return {NestableTask::handle_type::from_promise(*this)};
@@ -89,8 +91,6 @@ struct NestableTask::promise_type {
     void unhandled_exception() { exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return_void
     void return_void() const {}
-    // handle to the parent coroutine if the coroutine has one
-    handle_type m_parent;
 };
 
 inline void NestableTask::resume() const {
