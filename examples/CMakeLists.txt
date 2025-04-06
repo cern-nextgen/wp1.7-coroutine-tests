@@ -18,5 +18,3 @@ add_executable(event event.cpp)
 target_link_libraries(event PRIVATE CoroutineTests)
 add_executable(async async.cpp)
 target_link_libraries(async PRIVATE CoroutineTests)
-
-add_executable(coroutines coroutines.cpp)
