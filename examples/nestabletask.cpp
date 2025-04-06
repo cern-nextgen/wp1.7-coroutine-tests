@@ -39,7 +39,7 @@ CoroutineTests::NestableTask outer_task() {
 }
 
 int main() {
-    std::cout << "Nested tasks example example:\n";
+    std::cout << "Nested tasks example:\n";
     auto outer = outer_task();
     outer.resume();
     while(!outer.done()) {
