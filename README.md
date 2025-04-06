@@ -4,7 +4,7 @@ These are some (largely) independent tests with
 [coroutines](https://en.cppreference.com/w/cpp/language/coroutines)
 for the task scheduling studies in Work Package 1.7.
 
-This project isn't intended as a coroutine support library.
+This project isn't intended as a coroutine support library.  If you're looking for a fully-fledged coroutine library, consider using [cppcoro](https://github.com/lewissbaker/cppcoro) or [concurrencpp](https://github.com/David-Haim/concurrencpp).
 
 ## Getting started
 
@@ -30,3 +30,6 @@ Then run the examples, for instance:
 ./build/examples/generator
 ```
 
+## Development 
+
+To make experimentation easier, a [skeleton coroutine](./coroutine_skeleton.hpp) is provided that includes most of the boilerplate code and can be copied and completed with your own implementation.
