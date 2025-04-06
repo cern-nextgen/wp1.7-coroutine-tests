@@ -1,5 +1,7 @@
 # CoroutineTests examples
 
+add_executable(simplegenerator simplegenerator.cpp)
+target_link_libraries(simplegenerator PRIVATE CoroutineTests)
 add_executable(generator generator.cpp)
 target_link_libraries(generator PRIVATE CoroutineTests)
 add_executable(lazy lazy.cpp)
