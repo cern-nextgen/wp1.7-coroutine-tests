@@ -72,7 +72,7 @@ struct SimpleGenerator<T>::promise_type {
     std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
-    // called on (implicit or explicit) co_return or co_return_void
+    // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
     std::suspend_always yield_value(T value) {
         m_value = std::move(value);
