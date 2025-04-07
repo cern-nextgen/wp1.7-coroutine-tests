@@ -89,7 +89,7 @@ struct NestableTask::promise_type {
     }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { exception = std::current_exception(); }
-    // called on (implicit or explicit) co_return or co_return_void
+    // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
 };
 
