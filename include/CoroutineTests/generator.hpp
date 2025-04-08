@@ -59,8 +59,8 @@ class [[nodiscard]] Generator
 
 template <typename T>
 struct Generator<T>::promise_type {
-    T current_value;
-    std::exception_ptr exception;
+    T m_current_value;
+    std::exception_ptr m_exception;
     // required by coroutines
     Generator<T> get_return_object() {
         return {Generator<T>::handle_type::from_promise(*this)};
@@ -71,13 +71,13 @@ struct Generator<T>::promise_type {
     std::suspend_always final_suspend() const noexcept { return {}; }
     // called on co_yield
     std::suspend_always yield_value(T value) {
-        current_value = std::move(value);
+        m_current_value = std::move(value);
         return {};
     }
     // called on (implicit or explicit) co_return or co_return void
     void return_void() {}
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
 };
 
 template <typename T>
@@ -96,8 +96,8 @@ class Generator<T>::Iter {
     // Resume the coroutine and check if exception was thrown
     Iter& operator++() {
         m_coroutine.resume();
-        if (m_coroutine.promise().exception) {
-            std::rethrow_exception(m_coroutine.promise().exception);
+        if (m_coroutine.promise().m_exception) {
+            std::rethrow_exception(m_coroutine.promise().m_exception);
         }
         return *this;
     }
@@ -108,9 +108,9 @@ class Generator<T>::Iter {
         return temp;
     }
     // Return the current value of the coroutine
-    reference operator*() const { return m_coroutine.promise().current_value; }
+    reference operator*() const { return m_coroutine.promise().m_current_value; }
     pointer operator->() const {
-        return &(m_coroutine.promise().current_value);
+        return &(m_coroutine.promise().m_current_value);
     }
 
     bool operator==(std::default_sentinel_t) const {

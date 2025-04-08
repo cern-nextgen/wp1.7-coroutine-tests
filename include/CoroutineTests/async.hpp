@@ -58,7 +58,7 @@ class [[nodiscard]] Async {
 
 struct Async::promise_type {
     // storage for exceptions thrown in the coroutine
-    std::exception_ptr exception;
+    std::exception_ptr m_exception;
     // handle to the parent coroutine if the coroutine has one
     handle_type m_parent;
     // handle to the threadpool
@@ -96,7 +96,7 @@ struct Async::promise_type {
         return final_awaiter{};
     }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
 };

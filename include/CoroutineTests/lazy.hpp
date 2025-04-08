@@ -28,8 +28,7 @@ class [[nodiscard]] MaybeLazy {
     MaybeLazy() = default;
     MaybeLazy(const MaybeLazy&) = delete;
     MaybeLazy& operator=(const MaybeLazy&) = delete;
-    MaybeLazy(MaybeLazy&& other) noexcept
-        : m_coroutine{other.m_coroutine} {
+    MaybeLazy(MaybeLazy&& other) noexcept : m_coroutine{other.m_coroutine} {
         other.m_coroutine = {};
     }
     MaybeLazy& operator=(MaybeLazy&& other) noexcept {
@@ -47,10 +46,10 @@ class [[nodiscard]] MaybeLazy {
         if (!m_coroutine.done()) {
             m_coroutine.resume();
         }
-        if (m_coroutine.promise().exception) {
-            std::rethrow_exception(m_coroutine.promise().exception);
+        if (m_coroutine.promise().m_exception) {
+            std::rethrow_exception(m_coroutine.promise().m_exception);
         }
-        return m_coroutine.promise().current_value;
+        return m_coroutine.promise().m_current_value;
     }
     bool done() const { return m_coroutine.done(); }
 
@@ -60,8 +59,8 @@ class [[nodiscard]] MaybeLazy {
 
 template <typename T, bool is_lazy>
 struct MaybeLazy<T, is_lazy>::promise_type {
-    T current_value;
-    std::exception_ptr exception;
+    T m_current_value;
+    std::exception_ptr m_exception;
     // required by coroutines
     MaybeLazy<T, is_lazy> get_return_object() {
         return {MaybeLazy<T, is_lazy>::handle_type::from_promise(*this)};
@@ -80,9 +79,9 @@ struct MaybeLazy<T, is_lazy>::promise_type {
     std::suspend_always yield_value(T value) = delete;  // no co yield allowed
     // called on (implicit or explicit) co_return or co_return void. Conflicts
     // return_void.
-    void return_value(T value) { current_value = std::move(value); }
+    void return_value(T value) { m_current_value = std::move(value); }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
 };
 }  // namespace detail
 

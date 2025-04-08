@@ -46,11 +46,11 @@ class [[nodiscard]] DataSource {
         if (m_coroutine) {
             if (!m_coroutine.done()) {
                 m_coroutine.resume();
-                if (m_coroutine.promise().exception) {
-                    std::rethrow_exception(m_coroutine.promise().exception);
+                if (m_coroutine.promise().m_exception) {
+                    std::rethrow_exception(m_coroutine.promise().m_exception);
                 }
             }
-            return m_coroutine.promise().current_output;
+            return m_coroutine.promise().m_current_output;
         }
         throw std::logic_error("get() called on an invalid coroutine handle");
     }
@@ -62,9 +62,9 @@ class [[nodiscard]] DataSource {
 template <typename T>
 struct DataSource<T>::promise_type {
     // storage for exceptions thrown in the coroutine
-    std::exception_ptr exception;
+    std::exception_ptr m_exception;
     // storage for the latest value to be pushed to outside
-    T current_output{};
+    T m_current_output{};
 
     // required by coroutines
     DataSource get_return_object() {
@@ -75,7 +75,7 @@ struct DataSource<T>::promise_type {
     // called on coroutine completion
     std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
 };
@@ -85,14 +85,14 @@ struct DataSource<T>::promise_type {
 // This could be potentially replaced by just co_yield
 template <typename T>
 struct OutputAwaiter {
-    OutputAwaiter(T value) : value(value) {}
-    T value;
+    OutputAwaiter(T value) : m_value(value) {}
+    T m_value;
     // don't resume immediately
     bool await_ready() const { return false; }
     // copy data from awaiter to the promise of coroutine that suspended
     void await_suspend(
         std::coroutine_handle<typename DataSource<T>::promise_type> h) {
-        h.promise().current_output = value;
+        h.promise().m_current_output = m_value;
     }
     // nothing special on resume
     void await_resume() const {}
