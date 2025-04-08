@@ -58,7 +58,7 @@ class [[nodiscard]] NestableTask {
 
 struct NestableTask::promise_type {
     // storage for exceptions thrown in the coroutine
-    std::exception_ptr exception;
+    std::exception_ptr m_exception;
     // handle to the parent coroutine if the coroutine has one
     handle_type m_parent;
     // required by coroutines
@@ -88,7 +88,7 @@ struct NestableTask::promise_type {
         return final_awaiter{};
     }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
 };
@@ -97,8 +97,8 @@ inline void NestableTask::resume() const {
     if (!m_coroutine.done()) {
         m_coroutine.resume();
     }
-    if (m_coroutine.promise().exception) {
-        std::rethrow_exception(m_coroutine.promise().exception);
+    if (m_coroutine.promise().m_exception) {
+        std::rethrow_exception(m_coroutine.promise().m_exception);
     }
 }
 

@@ -48,7 +48,7 @@ class [[nodiscard]] Task {
 
 struct Task::promise_type {
     // storage for exceptions thrown in the coroutine
-    std::exception_ptr exception;
+    std::exception_ptr m_exception;
     // required by coroutines
     Task get_return_object() {
         return {Task::handle_type::from_promise(*this)};
@@ -58,7 +58,7 @@ struct Task::promise_type {
     // called on coroutine completion
     std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { exception = std::current_exception(); }
+    void unhandled_exception() { m_exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return void
     void return_void() const {}
 };
@@ -67,8 +67,8 @@ inline void Task::resume() const {
     if (!m_coroutine.done()) {
         m_coroutine.resume();
     }
-    if (m_coroutine.promise().exception) {
-        std::rethrow_exception(m_coroutine.promise().exception);
+    if (m_coroutine.promise().m_exception) {
+        std::rethrow_exception(m_coroutine.promise().m_exception);
     }
 }
 

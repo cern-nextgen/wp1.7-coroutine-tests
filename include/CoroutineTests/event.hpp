@@ -14,8 +14,8 @@ class SimpleEvent {
             for (auto& handle : m_awaiter.m_handles) {
                 if (handle && !handle.done()) {
                     handle.resume();
-                    if (handle.promise().exception) {
-                        std::rethrow_exception(handle.promise().exception);
+                    if (handle.promise().m_exception) {
+                        std::rethrow_exception(handle.promise().m_exception);
                     }
                 }
                 m_awaiter.m_handles.clear();
