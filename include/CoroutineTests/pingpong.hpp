@@ -5,7 +5,7 @@
 #include <exception>
 
 namespace CoroutineTests {
-
+// Coroutine with an associated peer coroutine that can be switched to
 class [[nodiscard]] Player {
     public:
     struct promise_type;  // typedef required by coroutines
@@ -35,6 +35,7 @@ class [[nodiscard]] Player {
         }
         return *this;
     }
+    // start the coroutine
     void start() {
         if (m_coroutine && !m_coroutine.done()) {
             m_coroutine.resume();
@@ -64,9 +65,7 @@ struct Player::promise_type {
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }
     // called on coroutine completion
-    std::suspend_always final_suspend() const noexcept {
-        return {};
-    }
+    std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { m_exception = std::current_exception(); }
     // called on (implicit or explicit) co_return or co_return void
@@ -75,11 +74,11 @@ struct Player::promise_type {
 
 inline Player::handle_type Player::await_suspend(handle_type handle) noexcept {
     m_coroutine.promise().m_peer = handle;
-    handle.promise().m_peer= m_coroutine;
-    return m_coroutine;    
+    handle.promise().m_peer = m_coroutine;
+    return m_coroutine;
 }
 
-struct Play{
+struct Play {
     bool await_ready() const noexcept { return false; }
     Player::handle_type await_suspend(Player::handle_type handle) noexcept {
         return handle.promise().m_peer;

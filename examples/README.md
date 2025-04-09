@@ -57,3 +57,7 @@ First to allow `co_await NestableTask` an awaitable interface is added to the `N
 ## Async
 
 Until know all the example coroutines were executing on a same thread of execution. In this example an `Async` coroutine is introduced to demonstrate executing coroutines on a thread-pool. For this a simple naive thread-pool resuming the coroutines is used. The `Async` is based on `NestableTask` with a change that the promise type holds a pointer to the thread-pool. In the `await_suspend` the pointer is propagated from parent coroutine to child coroutine, then the child coroutine is enqueued in the thread-pool instead of being returned and resumed with symmetric transfer. Similarly, in `final_suspend` the custom awaiter now enqueues the parent coroutine into the thread-pool.
+
+## Ping-pong
+
+Ping-pong example features two coroutines co-awaiting each other indefinitely. This demonstrates that symmetric transfer (retuning coroutine handle to be resumed in `await_suspend`) doesn't build-up the call stack and avoids stack overflow as opposed to resuming a coroutine with `.resume()` in the `await_suspend`. **Compiler-bug** gcc with optimization <=01 still uses extra stack-space even with symmetric transfer. clang works fine.
