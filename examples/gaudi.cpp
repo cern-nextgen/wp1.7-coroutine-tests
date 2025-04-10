@@ -29,28 +29,28 @@ namespace Gaudi
       /// Get the status of the statuscode
       Status status() const { return m_status; }
 
+      /// Friend function to output the status code
+      friend std::ostream &operator<<(std::ostream &os, const StatusCode &status)
+      {
+         os << "Gaudi::StatusCode::";
+         switch (status.status())
+         {
+         case StatusCode::SUCCESS:
+            os << "SUCCESS";
+            break;
+         case StatusCode::FAILURE:
+            os << "FAILURE";
+            break;
+         case StatusCode::UNDEFINED:
+            os << "UNDEFINED";
+            break;
+         }
+         return os;
+      }
+
    private:
       Status m_status;
    };
-
-   /// Output operator for StatusCode
-   std::ostream &operator<<(std::ostream &os, const StatusCode &status)
-   {
-      os << "Gaudi::StatusCode::";
-      switch (status.status())
-      {
-      case StatusCode::SUCCESS:
-         os << "SUCCESS";
-         break;
-      case StatusCode::FAILURE:
-         os << "FAILURE";
-         break;
-      case StatusCode::UNDEFINED:
-         os << "UNDEFINED";
-         break;
-      }
-      return os;
-   }
 
    namespace details
    {
@@ -283,7 +283,7 @@ namespace Gaudi
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool1(std::string_view parent)
 {
-   const std::string self = std::format("   {}.tool2", parent);
+   const std::string self = std::format("   {}.tool1", parent);
    std::cout << self << "  Yielding from tool1" << std::endl;
    co_yield Gaudi::StatusCode::SUCCESS;
    std::cout << self << "  Yielding from tool1" << std::endl;
@@ -350,6 +350,5 @@ int main()
       alg.resume();
    }
    std::cout << "Final value in main: " << alg.value() << std::endl;
-   std::cout << "Main finished" << std::endl;
    return EXIT_SUCCESS;
 }
