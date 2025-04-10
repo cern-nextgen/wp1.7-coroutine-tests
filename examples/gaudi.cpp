@@ -12,6 +12,46 @@
 
 namespace Gaudi
 {
+   /// Very simple StatusCode substitute
+   class StatusCode
+   {
+   public:
+      /// StatusCode values
+      enum Status
+      {
+         SUCCESS = 0,
+         FAILURE = 1,
+         UNDEFINED = 2
+      };
+      /// Constructor
+      StatusCode(Status status = UNDEFINED) : m_status(status) {}
+
+      /// Get the status of the statuscode
+      Status status() const { return m_status; }
+
+   private:
+      Status m_status;
+   };
+
+   /// Output operator for StatusCode
+   std::ostream &operator<<(std::ostream &os, const StatusCode &status)
+   {
+      os << "Gaudi::StatusCode::";
+      switch (status.status())
+      {
+      case StatusCode::SUCCESS:
+         os << "SUCCESS";
+         break;
+      case StatusCode::FAILURE:
+         os << "FAILURE";
+         break;
+      case StatusCode::UNDEFINED:
+         os << "UNDEFINED";
+         break;
+      }
+      return os;
+   }
+
    namespace details
    {
       /// Helper class to destroy a coroutine handle
@@ -84,19 +124,28 @@ namespace Gaudi
       ///
       /// @return @c false
       ///
-      constexpr bool await_ready() const noexcept { return false; }
+      constexpr bool await_ready() const noexcept
+      {
+         assert(m_handle);
+         return m_handle->done();
+      }
 
       /// When resuming, we resume the coroutine that the object represents
-      constexpr void await_resume() const noexcept {}
+      constexpr value_type await_resume() const noexcept
+      {
+         assert(m_handle);
+         return m_handle->promise().m_value;
+      }
 
       /// Remember the handle of the parent coroutine
       constexpr void await_suspend(handle_type handle)
       {
          // Connect the two coroutines
          assert(m_handle);
+         assert(!m_handle->promise().m_child_handle);
          handle.promise().m_child_handle = *m_handle;
          // Propagate our return value to the parent coroutine.
-         handle.promise().yield_value(m_handle->promise().m_value);
+         handle.promise().m_value = m_handle->promise().m_value;
       }
 
       /// @}
@@ -155,28 +204,31 @@ namespace Gaudi
          assert(m_handle);
          // Find the coroutine handle(s).
          auto handles = find_coroutines(*m_handle);
-         // Check if there's a child coroutine.
-         if (handles.second)
+
+         // Handle the child coroutines, if there are any.
+         while (handles.second)
          {
-            // If the child coroutine is not done, resume it
-            if (!handles.second.done())
+            resume_coroutine(handles.second);
+            if (handles.second.done())
             {
-               resume_coroutine(handles.second);
-               m_handle->promise().m_value = handles.second.promise().m_value;
+               // If the innermost couroutine is done, go on to run its parent
+               // right away.
+               handles.first.promise().m_child_handle = nullptr;
+               handles = find_coroutines(*m_handle);
             }
-            // If the child coroutine is done, we need to resume its parent.
             else
             {
-               handles.first.promise().m_child_handle = nullptr;
-               resume_coroutine(handles.first);
-               m_handle->promise().m_value = handles.first.promise().m_value;
+               // If the innermost coroutine is not done yet, just grab its
+               // yielded value, and return.
+               m_handle->promise().m_value = handles.second.promise().m_value;
+               return;
             }
          }
-         else
-         {
-            // If there is no child coroutine, just resume the current one
-            resume_coroutine(*m_handle);
-         }
+
+         // If we reached this point, then there is no "in-flight" child
+         // coroutine anymore. So we need to resume the main/parent coroutine.
+         assert(handles.first == *m_handle);
+         resume_coroutine(*m_handle);
       }
 
    private:
@@ -229,58 +281,75 @@ namespace Gaudi
 
 } // namespace Gaudi
 
-Gaudi::CoroutineT<int> tool1(std::string_view parent)
+Gaudi::CoroutineT<Gaudi::StatusCode> tool1(std::string_view parent)
 {
-   std::cout << std::format("Starting {}.tool1", parent) << std::endl;
-   co_yield 1;
-   std::cout << std::format("Continuing {}.tool1", parent) << std::endl;
-   co_yield 2;
-   std::cout << std::format("Finishing {}.tool1", parent) << std::endl;
-   co_return 3;
+   const std::string self = std::format("   {}.tool2", parent);
+   std::cout << self << "  Yielding from tool1" << std::endl;
+   co_yield Gaudi::StatusCode::SUCCESS;
+   std::cout << self << "  Yielding from tool1" << std::endl;
+   co_yield Gaudi::StatusCode::FAILURE;
+   std::cout << self << "  Finishing tool1" << std::endl;
+   co_return Gaudi::StatusCode::FAILURE;
 }
 
-Gaudi::CoroutineT<int> tool2(std::string_view parent)
+Gaudi::CoroutineT<Gaudi::StatusCode> tool2(std::string_view parent)
 {
-   std::cout << std::format("Starting {}.tool2", parent) << std::endl;
-   co_yield 11;
+   const std::string self = std::format("   {}.tool2", parent);
+   std::cout << self << "  Yielding from tool2" << std::endl;
+   co_yield Gaudi::StatusCode::SUCCESS;
 
-   std::cout << std::format("Launching tool1 from {}.tool2", parent) << std::endl;
-   co_await tool1(std::format("{}.tool2", parent));
+   std::cout << self << "  Launching tool1" << std::endl;
+   Gaudi::StatusCode code = co_await tool1(self);
+   std::cout << self << "  Result from tool1: " << code << std::endl;
 
-   std::cout << std::format("Continuing {}.tool2", parent) << std::endl;
-   co_yield 12;
-   std::cout << std::format("Finishing {}.tool2", parent) << std::endl;
-   co_return 13;
+   std::cout << self << "  Yielding from tool2" << std::endl;
+   co_yield Gaudi::StatusCode::FAILURE;
+   std::cout << self << "  Finishing tool2" << std::endl;
+   co_return Gaudi::StatusCode::SUCCESS;
 }
 
-Gaudi::CoroutineT<int> algorithm()
+Gaudi::CoroutineT<Gaudi::StatusCode> tool3(std::string_view parent)
 {
-   std::cout << "Starting algorithm" << std::endl;
-   co_yield 42;
+   const std::string self = std::format("   {}.tool3", parent);
+   std::cout << self << "  Finishing tool3" << std::endl;
+   co_return Gaudi::StatusCode::FAILURE;
+}
 
-   std::cout << "Launching tool1" << std::endl;
-   co_await tool1("algorithm");
+Gaudi::CoroutineT<Gaudi::StatusCode> algorithm(std::string_view parent)
+{
+   const std::string self = std::format("   {}.algorithm", parent);
+   std::cout << self << "  Yielding from algorithm" << std::endl;
+   co_yield Gaudi::StatusCode::SUCCESS;
 
-   std::cout << "Continuing algorithm" << std::endl;
-   co_yield 84;
+   std::cout << self << "  Launching tool1" << std::endl;
+   Gaudi::StatusCode code1 = co_await tool1(self);
+   std::cout << self << "  Result from tool1: " << code1 << std::endl;
 
-   std::cout << "Launching tool2" << std::endl;
-   co_await tool2("algorithm");
+   std::cout << self << "  Yielding from algorithm" << std::endl;
+   co_yield Gaudi::StatusCode::SUCCESS;
 
-   std::cout << "Finishing algorithm" << std::endl;
-   co_return 126;
+   std::cout << self << "  Launching tool2" << std::endl;
+   Gaudi::StatusCode code2 = co_await tool2(self);
+   std::cout << self << "  Result from tool2: " << code2 << std::endl;
+
+   std::cout << self << "  Launching tool3" << std::endl;
+   Gaudi::StatusCode code3 = co_await tool3(self);
+   std::cout << self << "  Result from tool3: " << code3 << std::endl;
+
+   std::cout << self << "  Finishing algorithm" << std::endl;
+   co_return Gaudi::StatusCode::SUCCESS;
 }
 
 int main()
 {
    std::cout << "Starting main" << std::endl;
-   auto alg = algorithm();
+   auto alg = algorithm("main");
    while (!alg.done())
    {
-      std::cout << "Main: " << alg.value() << std::endl;
+      std::cout << "Value in main: " << alg.value() << std::endl;
       alg.resume();
    }
-   std::cout << "Main: " << alg.value() << std::endl;
+   std::cout << "Final value in main: " << alg.value() << std::endl;
    std::cout << "Main finished" << std::endl;
    return EXIT_SUCCESS;
 }
