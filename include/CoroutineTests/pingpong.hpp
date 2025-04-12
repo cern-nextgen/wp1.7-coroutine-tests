@@ -44,14 +44,6 @@ class [[nodiscard]] Player {
     // set the peer coroutine
     inline void set_peer(const Player& peer);
 
-    // awaitable interface
-    // don't skip suspensions
-    bool await_ready() const noexcept { return false; }
-
-    inline handle_type await_suspend(handle_type handle) noexcept;
-    // nothing special on resume, doesn't produce a value
-    void await_resume() const noexcept {}
-
     private:
     handle_type m_coroutine;
 };
@@ -77,12 +69,6 @@ struct Player::promise_type {
 
 void Player::set_peer(const Player& peer) {
     m_coroutine.promise().m_peer = peer.m_coroutine;
-}
-
-inline Player::handle_type Player::await_suspend(handle_type handle) noexcept {
-    m_coroutine.promise().m_peer = handle;
-    handle.promise().m_peer = m_coroutine;
-    return m_coroutine;
 }
 
 struct Play {
