@@ -12,5 +12,3 @@ ColumnLimit: 80
 AccessModifierOffset: 0
 KeepEmptyLinesAtTheStartOfBlocks: true
 InsertNewlineAtEOF: true
-KeepEmptyLinesAtEOF: true
-
