@@ -1,4 +1,5 @@
 #include "CoroutineTests/pingpong.hpp"
+
 #include <iostream>
 
 CoroutineTests::Player pong() {
@@ -11,10 +12,7 @@ CoroutineTests::Player pong() {
 }
 
 CoroutineTests::Player ping() {
-    auto peer = pong();
-    auto counter = 1;
-    std::cout << "Ping " << counter << '\n';
-    co_await peer;
+    auto counter = 0;
     while (true) {
         ++counter;
         std::cout << "Ping " << counter << '\n';
@@ -25,6 +23,9 @@ CoroutineTests::Player ping() {
 int main() {
     std::cout << "Ping Pong example\n";
     auto ping_task = ping();
+    auto pong_task = pong();
+    ping_task.set_peer(pong_task);
+    pong_task.set_peer(ping_task);
     ping_task.start();
     return 0;
 }
