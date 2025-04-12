@@ -43,7 +43,7 @@ Instead of explicitly `co_await OutputAwaiter{value}` a `await_transform(T value
 ## DataSink
 
 This example show how an additional data can be injected to the coroutine frame. The main idea is to assign extra data from return type to a promise type member and use returned value from `auto value = co_await awaitable`.
-To achieve this a custom `InputAwaiter`  awaitable is defined, which defines `await_resume` that returns a value from promise type.   
+To achieve this a custom `InputAwaiter`  awaitable is defined, which defines `await_resume` that returns a value from promise type.
 
 ## Nestable Task
 
