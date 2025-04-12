@@ -9,7 +9,8 @@
 #include <vector>
 namespace CoroutineTests {
 // Simple and naive thread pool implementation.
-// Coroutines are pushed to a common queue and picked-up by the threads to execute.
+// Coroutines are pushed to a common queue and picked-up by the threads to
+// execute.
 
 class Threadpool {
     public:

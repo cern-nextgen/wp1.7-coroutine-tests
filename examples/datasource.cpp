@@ -9,7 +9,6 @@ CoroutineTests::DataSource<int> example() {
     }
 }
 
-
 int main() {
     std::cout << "DataSource example:\n";
     auto source = example();

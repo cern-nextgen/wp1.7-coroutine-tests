@@ -30,6 +30,6 @@ Then run the examples, for instance:
 ./build/examples/generator
 ```
 
-## Development 
+## Development
 
 To make experimentation easier, a [skeleton coroutine](./coroutine_skeleton.hpp) is provided that includes most of the boilerplate code and can be copied and completed with your own implementation.

@@ -42,8 +42,8 @@ int main() {
     std::cout << "Nested tasks example:\n";
     auto outer = outer_task();
     outer.resume();
-    while(!outer.done()) {
-        std::cout << "."<<std::flush;
+    while (!outer.done()) {
+        std::cout << "." << std::flush;
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
     std::cout << "Outer task done!\n";

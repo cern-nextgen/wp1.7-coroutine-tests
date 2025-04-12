@@ -108,7 +108,9 @@ class Generator<T>::Iter {
         return temp;
     }
     // Return the current value of the coroutine
-    reference operator*() const { return m_coroutine.promise().m_current_value; }
+    reference operator*() const {
+        return m_coroutine.promise().m_current_value;
+    }
     pointer operator->() const {
         return &(m_coroutine.promise().m_current_value);
     }
