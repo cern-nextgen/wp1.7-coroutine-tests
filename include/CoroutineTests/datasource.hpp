@@ -49,8 +49,9 @@ class [[nodiscard]] DataSource {
                 if (m_coroutine.promise().m_exception) {
                     std::rethrow_exception(m_coroutine.promise().m_exception);
                 }
+                return m_coroutine.promise().m_current_output;
             }
-            return m_coroutine.promise().m_current_output;
+            throw std::runtime_error("Calling get() on a done coroutine.");
         }
         throw std::logic_error("get() called on an invalid coroutine handle");
     }
@@ -88,7 +89,9 @@ struct OutputAwaiter {
     OutputAwaiter(T value) : m_value(value) {}
     T m_value;
     // don't resume immediately
-    bool await_ready() const { return false; }
+    bool await_ready() const { 
+        return false; 
+    }
     // copy data from awaiter to the promise of coroutine that suspended
     void await_suspend(
         std::coroutine_handle<typename DataSource<T>::promise_type> h) {
