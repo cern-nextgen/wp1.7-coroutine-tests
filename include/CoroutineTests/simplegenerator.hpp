@@ -39,18 +39,19 @@ class [[nodiscard]] SimpleGenerator {
         }
         return *this;
     }
-    // resume the coroutine from outside and get yielded value
-    T get() const {
+    // get yielded value
+    T get() const { return m_coroutine.promise().m_value; }
+
+    // resume the coroutine from outside and return whether it is not done
+    inline bool next() const {
         if (!m_coroutine.done()) {
             m_coroutine.resume();
         }
         if (m_coroutine.promise().m_exception) {
             std::rethrow_exception(m_coroutine.promise().m_exception);
         }
-        return m_coroutine.promise().m_value;
+        return !m_coroutine.done();
     }
-    // check if finished from outside
-    inline bool done() const { return m_coroutine.done(); }
 
     private:
     handle_type m_coroutine;
@@ -72,8 +73,8 @@ struct SimpleGenerator<T>::promise_type {
     std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
     void unhandled_exception() { m_exception = std::current_exception(); }
-    // called on (implicit or explicit) co_return or co_return_void
-    void return_value(T value) { m_value = std::move(value); }
+    // called on (implicit or explicit) co_return or co_return void
+    void return_void() const {}
     std::suspend_always yield_value(T value) {
         m_value = std::move(value);
         return {};
