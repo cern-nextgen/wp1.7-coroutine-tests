@@ -20,12 +20,12 @@ int main() {
     std::cout << "Got: " << source.get() << '\n';
     try {
         source.get();
+        std::cerr << "Failed to receive exception after one too many get()"
+                  << std::endl;
+        exit(EXIT_FAILURE);
     } catch (...) {
-        goto hadException;
+        std::cout << "Caught expected exception after one too many get()"
+                  << std::endl;
     }
-    std::cerr << "Failed to receive exception after one too many get()"
-              << std::endl;
-    exit(EXIT_FAILURE);
-hadException:
     return 0;
 }
