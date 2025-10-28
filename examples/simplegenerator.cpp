@@ -9,9 +9,9 @@
 #endif
 
 CoroutineTests::SimpleGenerator<int> sequence(int start, int end) {
-    // This complex counting ensures the last vaue is returned, making the corouting done.
-    // (otherwise we get() twice the last value)
-    int i=start++;
+    // This complex counting ensures the last vaue is returned, making the
+    // corouting done. (otherwise we get() twice the last value)
+    int i = start++;
     int ret = i++;
     while (i < end) {
         co_yield ret;
@@ -25,7 +25,7 @@ CoroutineTests::SimpleGenerator<int> infinite_sequence(int start) {
         co_yield start++;
     }
     // Unreacheable beut needed due to promise co_returning a number
-    co_return 0; 
+    co_return 0;
 }
 
 int main() {

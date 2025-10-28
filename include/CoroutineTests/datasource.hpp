@@ -89,9 +89,7 @@ struct OutputAwaiter {
     OutputAwaiter(T value) : m_value(value) {}
     T m_value;
     // don't resume immediately
-    bool await_ready() const { 
-        return false; 
-    }
+    bool await_ready() const { return false; }
     // copy data from awaiter to the promise of coroutine that suspended
     void await_suspend(
         std::coroutine_handle<typename DataSource<T>::promise_type> h) {
