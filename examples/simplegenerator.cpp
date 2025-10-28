@@ -25,13 +25,17 @@ int main() {
         std::cout << "Simple generator example\n";
         std::cout << "Finite sequence:\n";
         auto seq = sequence(0, 10);
-        while (!seq.done()) {
+        while (seq.next()) {
             std::cout << seq.get() << ' ';
         }
         std::cout << '\n';
         std::cout << "Infinite sequence:\n";
         auto inf_seq = infinite_sequence(0);
         for (int i = 0; i < 10; ++i) {
+            if (!inf_seq.next()) {
+                std::cerr << "Infinite sequence ended unexpectedly\n";
+                break;
+            }
             std::cout << inf_seq.get() << ' ';
         }
         std::cout << '\n';

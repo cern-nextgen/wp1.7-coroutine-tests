@@ -39,18 +39,19 @@ class [[nodiscard]] SimpleGenerator {
         }
         return *this;
     }
-    // resume the coroutine from outside and get yielded value
-    T get() const {
+    // get yielded value
+    T get() const { return m_coroutine.promise().m_value; }
+
+    // resume the coroutine from outside and return whether it is not done
+    inline bool next() const {
         if (!m_coroutine.done()) {
             m_coroutine.resume();
         }
         if (m_coroutine.promise().m_exception) {
             std::rethrow_exception(m_coroutine.promise().m_exception);
         }
-        return m_coroutine.promise().m_value;
+        return !m_coroutine.done();
     }
-    // check if finished from outside
-    inline bool done() const { return m_coroutine.done(); }
 
     private:
     handle_type m_coroutine;
