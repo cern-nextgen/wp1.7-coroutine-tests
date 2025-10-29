@@ -17,3 +17,8 @@ option(BUILD_EXAMPLES "Build example programs" ON)
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+option(BUILD_PERF "Build performance tests" ON)
+if(BUILD_PERF)
+  add_subdirectory(perf)
+endif()
