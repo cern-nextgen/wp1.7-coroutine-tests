@@ -5,6 +5,7 @@
 #include <format>
 #include <iostream>
 #include <string_view>
+#include <thread>
 #include <utility>
 
 template <typename Tag>
@@ -123,12 +124,12 @@ struct VerboseScheduler {
             return stdexec::connect(
                 stdexec::just() | stdexec::then([] {
                     std::cout << std::this_thread::get_id()
-                              << "  scheduler: Scheduling new work item"
+                              << "  scheduler Scheduling new work item"
                               << std::endl;
                 }) | stdexec::continues_on(baseSched) |
                     stdexec::then([] {
                         std::cout << std::this_thread::get_id()
-                                  << "  scheduler: Scheduled work item to run "
+                                  << "  scheduler Scheduled work item to run "
                                      "on this thread "
                                   << std::endl;
                     }),
@@ -248,7 +249,7 @@ exec::task<algs::StatusCode> algorithm(std::string_view parent) {
 }
 
 int main() {
-    std::cout << "Starting main" << std::endl;
+    std::cout << std::this_thread::get_id() << "  main Starting" << std::endl;
     exec::static_thread_pool pool{2};
     stdexec::scheduler auto scheduler = VerboseScheduler{pool.get_scheduler()};
     // Alternatively use the base scheduler directly
@@ -266,14 +267,16 @@ int main() {
     // auto [final_status] =
     // stdexec::sync_wait(stdexec::starts_on(std::move(scheduler),
     //                                       algorithm("main"))).value();
-    // std::cout << "Final status of algorithm " <<
-    // final_status << std::endl;
+    // std::cout << std::this_thread::get_id()
+    //           << "  main Final status of algorithm "
+    //           << final_status << std::endl;
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << "main waiting for algorithm to finish..." << std::endl;
+    std::cout << std::this_thread::get_id()
+              << "  main waiting for algorithm to finish..." << std::endl;
     // Block until all work items in the scope are done
     stdexec::sync_wait(scope.on_empty());
-
+    std::cout << std::this_thread::get_id() << "  main Done" << std::endl;
     return EXIT_SUCCESS;
 }
