@@ -50,3 +50,5 @@ _cache
 _tmp
 .cache
 .tmp
+
+.vscode

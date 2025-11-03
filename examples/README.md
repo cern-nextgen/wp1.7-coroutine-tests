@@ -69,3 +69,7 @@ Ping-pong example features two coroutines co-awaiting each other indefinitely. T
 This example shows a hierarchy of coroutines inspired by the [Gaudi](https://gitlab.cern.ch/gaudi/Gaudi) framework, where "algorithm" is the top-level coroutine that calls nested "tools" coroutines, which in turn can also have nested "tools" coroutines. All the coroutines can yield and return status codes which are propagated through the hierarchy.
 
 The "algorithm" coroutine can be manually resumed; each resumption continues from the innermost active coroutine. When that coroutine completes, control returns outward through the chain, and corresponding status code is returned back.
+
+## stdexec_task
+
+This example shows usage of `task` coroutine return type from the [stdexec](https://github.com/NVIDIA/stdexec) library. The example is similar to the `Gaudi` example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `stdexec::task` return type is used, which provides integration with the `stdexec` execution model. Unlike `Gaudi` example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a `stdexec` scheduler which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in `Async` example.

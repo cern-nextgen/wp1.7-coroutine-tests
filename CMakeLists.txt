@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 project(CoroutineTests)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "")
@@ -6,6 +6,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(CMAKE_CXX_STANDARD LESS 20)
   message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}. Must be at least C++20.")
 endif()
+
+
+## dependencies options
+
+option(USE_SYSTEM_LIBS "Use system libraries be default" FALSE)
+
+### stdexec options
+
+option(BUILD_STDEXEC "Build the stdexec sources included in CoroutineTests" TRUE)
+
+if (USE_SYSTEM_LIBS)
+  set(USE_SYSTEM_STDEXEC_DEFAULT ON)
+else()
+  set(USE_SYSTEM_STDEXEC_DEFAULT OFF)
+endif()
+option(USE_SYSTEM_STDEXEC
+  "Pick up an existing installation of stdexec from the build environment"
+  ${USE_SYSTEM_STDEXEC_DEFAULT})
+unset(USE_SYSTEM_STDEXEC_DEFAULT)
+
+if(BUILD_STDEXEC)
+  if(USE_SYSTEM_STDEXEC)
+    find_package(stdexec REQUIRED)
+  else()
+    add_subdirectory(extern/stdexec)
+  endif()
+endif()
+
+## targets
 
 add_library(CoroutineTests INTERFACE)
 target_include_directories(
