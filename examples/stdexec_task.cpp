@@ -60,7 +60,7 @@ struct AsyncAPIMockup {
     std::chrono::milliseconds delay;
     std::string_view parent;
 
-    // mandatory type aliases for stdexec
+    // mandatory type aliases for sender
     using sender_concept = stdexec::sender_t;
     using completion_signatures =
         stdexec::completion_signatures<stdexec::set_value_t(StatusCode)>;
@@ -68,16 +68,16 @@ struct AsyncAPIMockup {
     template <stdexec::receiver Receiver>
 
     // associated operation state
-    struct operation {
+    struct Operation {
         Receiver receiver;
         StatusCode status_code;
         std::chrono::milliseconds delay;
         std::string_view parent;
 
-        // mandatory type alias for stdexec
+        // mandatory type alias for operation state
         using operation_state_concept = stdexec::operation_state_t;
 
-        // mandatory start() method for stdexec
+        // mandatory start() method for operation state
         // mockup the async operation using a detached thread, then set value
         // with given status code
         void start() noexcept {
@@ -94,10 +94,10 @@ struct AsyncAPIMockup {
         }
     };
 
-    // mandatory connect() method for stdexec
+    // mandatory connect() method for sender
     template <stdexec::receiver Receiver>
     auto connect(Receiver receiver) const noexcept {
-        return operation<Receiver>{std::move(receiver), std::move(status_code),
+        return Operation<Receiver>{std::move(receiver), std::move(status_code),
                                    std::move(delay), parent};
     }
 };
