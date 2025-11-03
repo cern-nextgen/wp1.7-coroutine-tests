@@ -197,16 +197,27 @@ exec::task<algs::StatusCode> algorithm(std::string_view parent) {
 int main() {
     std::cout << "Starting main" << std::endl;
     exec::static_thread_pool pool{2};
+    stdexec::scheduler auto scheduler = pool.get_scheduler();
     exec::async_scope scope;
-    // start executing the algorithm without blocking main
+    // Start executing the algorithm without blocking main
     scope.spawn(
-        stdexec::starts_on(pool.get_scheduler(), []() -> exec::task<void> {
+        stdexec::starts_on(std::move(scheduler), []() -> exec::task<void> {
             auto status = co_await algorithm("main");
             std::cout << std::this_thread::get_id() << "  "
                       << "Final status of algorithm " << status << std::endl;
         }()));
-    std::cout << "Waiting for algorithm to finish..." << std::endl;
-    // block until all items in the scope are done
+    // Alternatively block main and wait for the algorithm to finish
+    // auto [final_status] =
+    // stdexec::sync_wait(stdexec::starts_on(std::move(scheduler),
+    //                                       algorithm("main"))).value();
+    // std::cout << "Final status of algorithm " <<
+    // final_status << std::endl;
+
+    // Sleep a bit to show that algorithm is already running
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::cout << "main waiting for algorithm to finish..." << std::endl;
+    // Block until all work items in the scope are done
     stdexec::sync_wait(scope.on_empty());
+
     return EXIT_SUCCESS;
 }
