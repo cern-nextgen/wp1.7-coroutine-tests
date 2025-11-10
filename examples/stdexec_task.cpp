@@ -5,6 +5,7 @@
 #include <format>
 #include <iostream>
 #include <string_view>
+#include <thread>
 #include <utility>
 
 template <typename Tag>
@@ -102,6 +103,59 @@ struct AsyncAPIMockup {
     }
 };
 
+// Scheduler that wraps another scheduler and logs scheduling operations to
+// standard output
+template <stdexec::scheduler BaseScheduler>
+struct VerboseScheduler {
+    BaseScheduler baseSched;
+
+    // associated sender for schedule()
+    struct Sender {
+        BaseScheduler baseSched;
+
+        // mandatory type aliases for sender
+        using sender_concept = stdexec::sender_t;
+        using completion_signatures = stdexec::completion_signatures_of_t<
+            typename stdexec::schedule_result_t<BaseScheduler>>;
+
+        // mandatory connect() method for sender
+        // delegate to the base scheduler and log the scheduling
+        auto connect(stdexec::receiver auto receiver) const noexcept {
+            return stdexec::connect(
+                stdexec::just() | stdexec::then([] {
+                    std::cout << std::this_thread::get_id()
+                              << "  scheduler Scheduling new work item"
+                              << std::endl;
+                }) | stdexec::continues_on(baseSched) |
+                    stdexec::then([] {
+                        std::cout << std::this_thread::get_id()
+                                  << "  scheduler Scheduled work item to run "
+                                     "on this thread "
+                                  << std::endl;
+                    }),
+                std::move(receiver));
+        }
+        // mandatory get_env() method for scheduler's sender
+        // delegate to the base scheduler
+        constexpr auto get_env() const noexcept {
+            return stdexec::env{
+                stdexec::prop{
+                    stdexec::get_completion_scheduler<stdexec::set_value_t>,
+                    VerboseScheduler{baseSched}},
+                stdexec::get_env(stdexec::schedule(baseSched))};
+        }
+    };
+    // mandatory schedule() method for scheduler
+    auto schedule() const { return Sender{baseSched}; }
+    // mandatory equality operator for scheduler
+    bool operator==(const VerboseScheduler& other) const = default;
+    // mandatory get_env() method for scheduler
+    auto query(
+        stdexec::get_forward_progress_guarantee_t guarantee) const noexcept {
+        return guarantee(baseSched);
+    }
+};
+
 exec::task<tools::StatusCode> tool1(std::string_view parent) {
     const auto self = std::format("   {}.tool1", parent);
 
@@ -195,9 +249,12 @@ exec::task<algs::StatusCode> algorithm(std::string_view parent) {
 }
 
 int main() {
-    std::cout << "Starting main" << std::endl;
+    std::cout << std::this_thread::get_id() << "  main Starting" << std::endl;
     exec::static_thread_pool pool{2};
-    stdexec::scheduler auto scheduler = pool.get_scheduler();
+    stdexec::scheduler auto scheduler = VerboseScheduler{pool.get_scheduler()};
+    // Alternatively use the base scheduler directly
+    // stdexec::scheduler auto scheduler = pool.get_scheduler();
+
     exec::async_scope scope;
     // Start executing the algorithm without blocking main
     scope.spawn(
@@ -210,14 +267,16 @@ int main() {
     // auto [final_status] =
     // stdexec::sync_wait(stdexec::starts_on(std::move(scheduler),
     //                                       algorithm("main"))).value();
-    // std::cout << "Final status of algorithm " <<
-    // final_status << std::endl;
+    // std::cout << std::this_thread::get_id()
+    //           << "  main Final status of algorithm "
+    //           << final_status << std::endl;
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << "main waiting for algorithm to finish..." << std::endl;
+    std::cout << std::this_thread::get_id()
+              << "  main waiting for algorithm to finish..." << std::endl;
     // Block until all work items in the scope are done
     stdexec::sync_wait(scope.on_empty());
-
+    std::cout << std::this_thread::get_id() << "  main Done" << std::endl;
     return EXIT_SUCCESS;
 }
