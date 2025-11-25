@@ -102,7 +102,10 @@ struct Algorithm::promise_type {
     // on final_suspend reschedule the parent coroutine if it has one
     std::suspend_always final_suspend() const noexcept { return {}; }
     // acts as a catch block for exceptions thrown in the coroutine
-    void unhandled_exception() { m_exception = std::current_exception(); }
+    void unhandled_exception() {
+        m_exception = std::current_exception();
+        m_promise.set_exception(m_exception);
+    }
     // called on (implicit or explicit) co_return or co_return void
     void return_value(StatusCode value) { m_promise.set_value(value); }
 };

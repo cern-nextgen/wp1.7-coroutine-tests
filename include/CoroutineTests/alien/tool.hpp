@@ -84,9 +84,9 @@ class [[nodiscard]] Tool {
     // when awaited, store the parent coroutine handle and reschedule this
     // coroutine
     template <HasScheduler T>
-    inline void await_suspend(std::coroutine_handle<T> handle) noexcept;
+    inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
     // nothing special on resume, doesn't produce a value
-    StatusCode await_resume() const noexcept;
+    StatusCode await_resume() const;
 
     private:
     handle_type m_coroutine = nullptr;
@@ -136,13 +136,18 @@ struct Tool::promise_type {
 };
 
 template <HasScheduler T>
-inline void Tool::await_suspend(std::coroutine_handle<T> handle) noexcept {
+inline Tool::handle_type Tool::await_suspend(
+    std::coroutine_handle<T> handle) noexcept {
     m_coroutine.promise().m_parent = handle;
     m_coroutine.promise().m_scheduler = handle.promise().get_scheduler();
-    m_coroutine.promise().reschedule();
+    return m_coroutine;
 }
 
-inline StatusCode Tool::await_resume() const noexcept {
+inline StatusCode Tool::await_resume() const {
+    if (m_coroutine.promise().m_exception) {
+        std::rethrow_exception(m_coroutine.promise().m_exception);
+    }
+
     return m_coroutine.promise().m_value;
 }
 }  // namespace CoroutineTests::alien::tool
