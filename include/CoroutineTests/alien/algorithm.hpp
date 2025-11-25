@@ -7,8 +7,6 @@
 #include <future>
 #include <iostream>
 
-#include "CoroutineTests/threadpool.hpp"
-
 namespace CoroutineTests::alien::algorithm {
 
 class StatusCode {
@@ -50,6 +48,8 @@ class [[nodiscard]] Algorithm {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
+    using scheduler_type = std::function<void(std::coroutine_handle<>)>;
+
     Algorithm(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~Algorithm() {
@@ -74,7 +74,7 @@ class [[nodiscard]] Algorithm {
         return *this;
     }
     // start the coroutine on the threadpool
-    inline std::future<StatusCode> schedule_on(Threadpool& threadpool);
+    inline std::future<StatusCode> schedule_on(const scheduler_type& scheduler);
     inline StatusCode get() const;
 
     private:
@@ -88,7 +88,7 @@ struct Algorithm::promise_type {
     // handle to the parent coroutine if the coroutine has one
     handle_type m_parent;
     // handle to scheduler
-    std::function<void(std::coroutine_handle<>)> m_scheduler;
+    scheduler_type m_scheduler;
     std::promise<StatusCode> m_promise;
 
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
@@ -110,13 +110,11 @@ struct Algorithm::promise_type {
     void return_value(StatusCode value) { m_promise.set_value(value); }
 };
 
-std::future<StatusCode> Algorithm::schedule_on(Threadpool& threadpool) {
+std::future<StatusCode> Algorithm::schedule_on(
+    const scheduler_type& scheduler) {
     if (m_coroutine && !m_started) {
-        m_coroutine.promise().m_scheduler =
-            [&threadpool](std::coroutine_handle<> handle) {
-                threadpool.enqueue_task(handle);
-            };
-        threadpool.enqueue_task(m_coroutine);
+        m_coroutine.promise().m_scheduler = scheduler;
+        m_coroutine.promise().reschedule();
         m_started = true;
         return m_coroutine.promise().m_promise.get_future();
     }

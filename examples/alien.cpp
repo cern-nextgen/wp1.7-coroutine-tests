@@ -1,12 +1,20 @@
 #include <chrono>
 #include <coroutine>
+#include <exception>
+#include <format>
 #include <iostream>
+#include <stdexcept>
+#include <string_view>
 #include <thread>
 
 #include "CoroutineTests/alien/algorithm.hpp"
 #include "CoroutineTests/alien/subtool.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
+
+std::ostream& log() {
+    return std::cout << std::this_thread::get_id() << "  ";
+}
 
 class StatusCode {
     public:
@@ -42,157 +50,136 @@ class StatusCode {
 struct MockupAwaiter {
     std::chrono::milliseconds delay;
     StatusCode status_code;
-
-    MockupAwaiter(std::chrono::milliseconds d, StatusCode sc)
-        : delay(d), status_code(sc) {}
+    std::string_view parent;
 
     bool await_ready() const noexcept { return false; }
 
     template <typename T>
     void await_suspend(std::coroutine_handle<T> handle) noexcept {
         std::thread([this, handle]() {
+            const auto self = std::format("   {}.AsyncAPIMockup", parent);
+            log() << self << "  Async operation started, will take "
+                  << delay.count() << " ms" << std::endl;
             std::this_thread::sleep_for(delay);
-            std::cout << std::this_thread::get_id() << "  MockupAwaiter done\n";
+            log() << self << "  Async operation finished" << std::endl;
             handle.promise().reschedule();
         }).detach();
     }
     StatusCode await_resume() const noexcept { return status_code; }
 };
 
-CoroutineTests::alien::algorithm::Algorithm trivial_algorithm() {
-    std::cout << std::this_thread::get_id() << "  Starting trivial algorithm"
-              << std::endl;
-    co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
-}
-
-CoroutineTests::alien::algorithm::Algorithm algorithm_with_awaiter() {
-
-    std::cout << std::this_thread::get_id()
-              << "  Starting algorithm with awaiter" << std::endl;
-    auto status = co_await MockupAwaiter(std::chrono::milliseconds(200),
-                                         StatusCode::SUCCESS);
-    std::cout << std::this_thread::get_id()
-              << "  Awaiter returned status: " << status << std::endl;
-    if (status.status() != StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
-    }
-    co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
-}
-
-CoroutineTests::alien::tool::Tool success_tool() {
-    co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
-}
-
-CoroutineTests::alien::tool::Tool failure_tool() {
-    co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
-}
-
-CoroutineTests::alien::algorithm::Algorithm algorithm_w_tools() {
-    auto code1 = co_await success_tool();
-    std::cout << std::this_thread::get_id()
-              << "  Tool1 returned status: " << code1 << std::endl;
-    if (code1.status() != CoroutineTests::alien::tool::StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
-    }
-    auto code2 = co_await failure_tool();
-    std::cout << std::this_thread::get_id()
-              << "  Tool2 returned status: " << code2 << std::endl;
-    if (code2.status() != CoroutineTests::alien::tool::StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
-    }
-
-    co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
-}
-
-CoroutineTests::alien::subtool::SubTool success_subtool() {
-    auto code = co_await MockupAwaiter(std::chrono::milliseconds(100),
-                                       StatusCode::SUCCESS);
-    std::cout << std::this_thread::get_id()
-              << "  SubTool awaiter returned status: " << code << std::endl;
-    if (code.status() != StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::subtool::StatusCode::FAILURE;
-    }
+// co_awaits a MockupAwaiter
+CoroutineTests::alien::subtool::SubTool subtool(std::string_view parent) {
+    auto self = std::format("   {}.subtool", parent);
+    log() << self << "  Calling async API in subtool" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(75),
+                                         StatusCode::SUCCESS, self};
+    log() << self << "  Result from async API in subtool: " << status
+          << std::endl;
+    log() << self << "  Finishing subtool" << std::endl;
     co_return CoroutineTests::alien::subtool::StatusCode::SUCCESS;
 }
 
-CoroutineTests::alien::tool::Tool tool_with_subtool() {
-    auto subtool_code = co_await success_subtool();
-    std::cout << std::this_thread::get_id()
-              << "  Tool's SubTool returned status: " << subtool_code
-              << std::endl;
-    if (subtool_code.status() !=
-        CoroutineTests::alien::subtool::StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
-    }
+// throws
+CoroutineTests::alien::subtool::SubTool throwing_subtool(
+    std::string_view parent) {
+    auto self = std::format("   {}.throwing_subtool", parent);
+    log() << self << "  Calling async API in throwing_subtool" << std::endl;
+    // simulate immediate failure without async work
+    log() << self << "  About to throw exception" << std::endl;
+    throw std::runtime_error("throwing_subtool simulated failure");
+    co_return CoroutineTests::alien::subtool::StatusCode::FAILURE;
+}
+
+// co_awaits a MockupAwaiter
+CoroutineTests::alien::tool::Tool tool1(std::string_view parent) {
+    auto self = std::format("   {}.tool1", parent);
+    log() << self << "  Calling async API in tool1" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(100),
+                                         StatusCode::SUCCESS, self};
+    log() << self << "  Result from async API in tool1: " << status
+          << std::endl;
+    log() << self << "  Finishing tool1" << std::endl;
+    co_return CoroutineTests::alien::tool::StatusCode::
+        FAILURE;  // mimic stdexec_task.cpp tool1 result
+}
+
+// co_awaits subtool
+CoroutineTests::alien::tool::Tool tool2(std::string_view parent) {
+    auto self = std::format("   {}.tool2", parent);
+    log() << self << "  Calling async API in tool2" << std::endl;
+    auto status1 = co_await MockupAwaiter{std::chrono::milliseconds(10),
+                                          StatusCode::SUCCESS, self};
+    log() << self << "  Result from async API in tool2: " << status1
+          << std::endl;
+    log() << self << "  Launching tool1" << std::endl;
+    auto code = co_await tool1(self);
+    log() << self << "  Result from tool1: " << code << std::endl;
+    log() << self << "  Calling async API in tool2" << std::endl;
+    auto status2 = co_await MockupAwaiter{std::chrono::milliseconds(10),
+                                          StatusCode::FAILURE, self};
+    log() << self << "  Result from async API in tool2: " << status2
+          << std::endl;
+    log() << self << "  Finishing tool2" << std::endl;
     co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
 }
 
-CoroutineTests::alien::algorithm::Algorithm algorithm_w_subtools() {
-    auto tool_code1 = co_await tool_with_subtool();
-    std::cout << std::this_thread::get_id()
-              << "  Algorithm's Tool1 returned status: " << tool_code1
+// tool3: co_awaits throwing_subtool, catches expected exception & rethrows
+CoroutineTests::alien::tool::Tool tool3(std::string_view parent) {
+    auto self = std::format("   {}.tool3", parent);
+    try {
+        auto code = co_await throwing_subtool(self);
+        log() << self << "  throwing_subtool returned (unexpected): " << code
               << std::endl;
-    if (tool_code1.status() !=
-        CoroutineTests::alien::tool::StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
+        log() << self << "  Finishing tool3" << std::endl;
+        co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+    } catch (const std::runtime_error& e) {
+        log() << self << "  Caught exception (expected): " << e.what()
+              << "; rethrowing" << std::endl;
+        throw e;
     }
-    auto tool_code2 = co_await tool_with_subtool();
-    std::cout << std::this_thread::get_id()
-              << "  Algorithm's Tool2 returned status: " << tool_code2
+}
+
+// Algorithm: co_awaits MockupAwaiter then tool1 then tool2 then tool3
+CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
+    auto self = std::format("   {}.algorithm", parent);
+    log() << self << "  Starting algorithm" << std::endl;
+    log() << self << "  Calling async API in algorithm" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(42),
+                                         StatusCode::SUCCESS, self};
+    log() << self << "  Result from async API in algorithm: " << status
+          << std::endl;
+    log() << self << "  Launching tool1" << std::endl;
+    auto code1 = co_await tool1(self);
+    log() << self << "  Result from tool1: " << code1 << std::endl;
+    log() << self << "  Launching tool2" << std::endl;
+    auto code2 = co_await tool2(self);
+    log() << self << "  Result from tool2: " << code2 << std::endl;
+    log() << self << "  Launching tool3" << std::endl;
+    try {
+        co_await tool3(self);
+        log() << self << "  Unreachable code" << std::endl;
+    } catch (const std::runtime_error& e) {
+        log() << self
+              << "  Caught exception  (expected) from tool3: " << e.what()
               << std::endl;
-    if (tool_code2.status() !=
-        CoroutineTests::alien::tool::StatusCode::SUCCESS) {
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
     }
+    log() << self << "  Finishing algorithm" << std::endl;
     co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
 }
 
 int main() {
-    std::cout << std::this_thread::get_id() << "  Starting main\n";
+    log() << "main Starting\n";
     CoroutineTests::Threadpool threadpool(1);
-    {
-        auto alg = trivial_algorithm();
-        auto future = alg.schedule_on(threadpool);
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm scheduled, waiting for completion...\n";
-        auto status = future.get();
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm completed with status: " << status
-                  << "\n---\n";
-    }
-    {
-        std::cout << std::this_thread::get_id()
-                  << "  Starting algorithm with awaiter...\n";
-        auto alg = algorithm_with_awaiter();
-        auto future = alg.schedule_on(threadpool);
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm scheduled, waiting for completion...\n";
-        auto status = future.get();
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm completed with status: " << status
-                  << "\n---\n";
-    }
-    {
-        std::cout << std::this_thread::get_id()
-                  << "  Starting algorithm with tool...\n";
-        auto t = algorithm_w_tools();
-        auto future = t.schedule_on(threadpool);
-        std::cout << std::this_thread::get_id()
-                  << "  Tool scheduled, waiting for completion...\n";
-        auto status = future.get();
-        std::cout << std::this_thread::get_id()
-                  << "  Tool completed with status: " << status << "\n---\n";
-    }
-    {
-        std::cout << std::this_thread::get_id()
-                  << "  Starting algorithm with tools and subtools...\n";
-        auto t = algorithm_w_subtools();
-        auto future = t.schedule_on(threadpool);
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm scheduled, waiting for completion...\n";
-        auto status = future.get();
-        std::cout << std::this_thread::get_id()
-                  << "  Algorithm completed with status: " << status << "\n";
-    }
+    auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
+        log() << "scheduler Reschedule called, enqueueing resumption\n";
+        threadpool.enqueue_task(handle);
+    };
+    log() << "main Launching algorithm...\n";
+    auto t = algorithm("main");
+    auto future = t.schedule_on(scheduler);
+    log() << "main Waiting for algorithm completion...\n";
+    auto status = future.get();
+    log() << "main Final status of algorithm " << status << "\n";
     return 0;
 }
