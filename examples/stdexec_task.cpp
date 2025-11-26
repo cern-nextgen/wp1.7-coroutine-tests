@@ -8,6 +8,14 @@
 #include <thread>
 #include <utility>
 
+std::ostream& log() {
+    return std::cout << std::this_thread::get_id() << "  ";
+}
+
+std::ostream& log(std::string_view self) {
+    return std::cout << std::this_thread::get_id() << "  " << self << "  ";
+}
+
 template <typename Tag>
 class StatusCodeImpl {
     public:
@@ -84,12 +92,10 @@ struct AsyncAPIMockup {
         void start() noexcept {
             std::thread([this]() {
                 const auto self = std::format("   {}.AsyncAPIMockup", parent);
-                std::cout << std::this_thread::get_id() << "  " << self
-                          << "  Async operation started, will take "
+                log(self) << "Async operation started, will take "
                           << delay.count() << " ms" << std::endl;
                 std::this_thread::sleep_for(delay);
-                std::cout << std::this_thread::get_id() << "  " << self
-                          << "  Async operation finished" << std::endl;
+                log(self) << "Async operation finished" << std::endl;
                 stdexec::set_value(std::move(receiver), status_code);
             }).detach();
         }
@@ -123,15 +129,12 @@ struct VerboseScheduler {
         auto connect(stdexec::receiver auto receiver) const noexcept {
             return stdexec::connect(
                 stdexec::just() | stdexec::then([] {
-                    std::cout << std::this_thread::get_id()
-                              << "  scheduler Scheduling new work item"
-                              << std::endl;
+                    log() << "scheduler Scheduling new work item" << std::endl;
                 }) | stdexec::continues_on(baseSched) |
                     stdexec::then([] {
-                        std::cout << std::this_thread::get_id()
-                                  << "  scheduler Scheduled work item to run "
-                                     "on this thread "
-                                  << std::endl;
+                        log() << "scheduler Scheduled work item to run on this "
+                                 "thread "
+                              << std::endl;
                     }),
                 std::move(receiver));
         }
@@ -159,97 +162,73 @@ struct VerboseScheduler {
 exec::task<tools::StatusCode> tool1(std::string_view parent) {
     const auto self = std::format("   {}.tool1", parent);
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Calling async API in tool1" << std::endl;
+    log(self) << "Calling async API in tool1" << std::endl;
     auto status = co_await AsyncAPIMockup{tools::StatusCode::SUCCESS,
                                           std::chrono::milliseconds(100), self};
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from async API in tool1: " << status << std::endl;
+    log(self) << "Result from async API in tool1: " << status << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Finishing tool1" << std::endl;
+    log(self) << "Finishing tool1" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
 exec::task<tools::StatusCode> tool2(std::string_view parent) {
     const auto self = std::format("   {}.tool2", parent);
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Calling async API in tool2" << std::endl;
+    log(self) << "Calling async API in tool2" << std::endl;
     auto status1 = co_await AsyncAPIMockup{tools::StatusCode::SUCCESS,
                                            std::chrono::milliseconds(10), self};
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from async API in tool2: " << status1 << std::endl;
+    log(self) << "Result from async API in tool2: " << status1 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Launching tool1" << std::endl;
+    log(self) << "Launching tool1" << std::endl;
     auto code = co_await tool1(self);
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from tool1: " << code << std::endl;
+    log(self) << "Result from tool1: " << code << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Calling async API in tool2" << std::endl;
+    log(self) << "Calling async API in tool2" << std::endl;
     auto status2 = co_await AsyncAPIMockup{tools::StatusCode::FAILURE,
                                            std::chrono::milliseconds(10), self};
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from async API in tool2: " << status2 << std::endl;
+    log(self) << "Result from async API in tool2: " << status2 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Finishing tool2" << std::endl;
+    log(self) << "Finishing tool2" << std::endl;
     co_return tools::StatusCode::SUCCESS;
 }
 
 exec::task<tools::StatusCode> tool3(std::string_view parent) {
     const auto self = std::format("   {}.tool3", parent);
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Finishing tool3" << std::endl;
+    log(self) << "Finishing tool3" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
 exec::task<algs::StatusCode> algorithm(std::string_view parent) {
     const auto self = std::format("   {}.algorithm", parent);
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Calling async API in algorithm" << std::endl;
+    log(self) << "Calling async API in algorithm" << std::endl;
     auto status1 = co_await AsyncAPIMockup{algs::StatusCode::SUCCESS,
                                            std::chrono::milliseconds(42), self};
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from async API in algorithm: " << status1
-              << std::endl;
+    log(self) << "Result from async API in algorithm: " << status1 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Launching tool1" << std::endl;
+    log(self) << "Launching tool1" << std::endl;
     auto code1 = co_await tool1(self);
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from tool1: " << code1 << std::endl;
+    log(self) << "Result from tool1: " << code1 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Calling async API in algorithm" << std::endl;
+    log(self) << "Calling async API in algorithm" << std::endl;
     auto status2 = co_await AsyncAPIMockup{algs::StatusCode::FAILURE,
                                            std::chrono::milliseconds(17), self};
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from async API in algorithm: " << status2
-              << std::endl;
+    log(self) << "Result from async API in algorithm: " << status2 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Launching tool2" << std::endl;
+    log(self) << "Launching tool2" << std::endl;
     auto code2 = co_await tool2(self);
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from tool2: " << code2 << std::endl;
+    log(self) << "Result from tool2: " << code2 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Launching tool3" << std::endl;
+    log(self) << "Launching tool3" << std::endl;
     auto code3 = co_await tool3(self);
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Result from tool3: " << code3 << std::endl;
+    log(self) << "Result from tool3: " << code3 << std::endl;
 
-    std::cout << std::this_thread::get_id() << "  " << self
-              << "  Finishing algorithm" << std::endl;
+    log(self) << "Finishing algorithm" << std::endl;
     co_return algs::StatusCode::SUCCESS;
 }
 
 int main() {
-    std::cout << std::this_thread::get_id() << "  main Starting" << std::endl;
+    log() << "main Starting" << std::endl;
     exec::static_thread_pool pool{2};
     stdexec::scheduler auto scheduler = VerboseScheduler{pool.get_scheduler()};
     // Alternatively use the base scheduler directly
@@ -260,8 +239,7 @@ int main() {
     scope.spawn(
         stdexec::starts_on(std::move(scheduler), []() -> exec::task<void> {
             auto status = co_await algorithm("main");
-            std::cout << std::this_thread::get_id() << "  "
-                      << "Final status of algorithm " << status << std::endl;
+            log() << "Final status of algorithm " << status << std::endl;
         }()));
     // Alternatively block main and wait for the algorithm to finish
     // auto [final_status] =
@@ -273,10 +251,9 @@ int main() {
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    std::cout << std::this_thread::get_id()
-              << "  main waiting for algorithm to finish..." << std::endl;
+    log() << "main waiting for algorithm to finish..." << std::endl;
     // Block until all work items in the scope are done
     stdexec::sync_wait(scope.on_empty());
-    std::cout << std::this_thread::get_id() << "  main Done" << std::endl;
+    log() << "main Done" << std::endl;
     return EXIT_SUCCESS;
 }
