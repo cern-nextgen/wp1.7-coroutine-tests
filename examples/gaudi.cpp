@@ -10,6 +10,15 @@
 #include <string_view>
 #include <type_traits>
 
+std::ostream &log(std::string_view self) {
+    return std::cout << self << "  ";
+}
+
+std::ostream &log() {
+    return std::cout;
+    ;
+}
+
 namespace Gaudi {
 /// Very simple StatusCode substitute
 class StatusCode {
@@ -260,66 +269,66 @@ struct CoroutineT<T>::promise {
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool1(std::string_view parent) {
     const std::string self = std::format("   {}.tool1", parent);
-    std::cout << self << "  Yielding from tool1" << std::endl;
+    log(self) << "Yielding from tool1" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
-    std::cout << self << "  Yielding from tool1" << std::endl;
+    log(self) << "Yielding from tool1" << std::endl;
     co_yield Gaudi::StatusCode::FAILURE;
-    std::cout << self << "  Finishing tool1" << std::endl;
+    log(self) << "Finishing tool1" << std::endl;
     co_return Gaudi::StatusCode::FAILURE;
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool2(std::string_view parent) {
     const std::string self = std::format("   {}.tool2", parent);
-    std::cout << self << "  Yielding from tool2" << std::endl;
+    log(self) << "Yielding from tool2" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
 
-    std::cout << self << "  Launching tool1" << std::endl;
+    log(self) << "Launching tool1" << std::endl;
     Gaudi::StatusCode code = co_await tool1(self);
-    std::cout << self << "  Result from tool1: " << code << std::endl;
+    log(self) << "Result from tool1: " << code << std::endl;
 
-    std::cout << self << "  Yielding from tool2" << std::endl;
+    log(self) << "Yielding from tool2" << std::endl;
     co_yield Gaudi::StatusCode::FAILURE;
-    std::cout << self << "  Finishing tool2" << std::endl;
+    log(self) << "Finishing tool2" << std::endl;
     co_return Gaudi::StatusCode::SUCCESS;
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool3(std::string_view parent) {
     const std::string self = std::format("   {}.tool3", parent);
-    std::cout << self << "  Finishing tool3" << std::endl;
+    log(self) << "Finishing tool3" << std::endl;
     co_return Gaudi::StatusCode::FAILURE;
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> algorithm(std::string_view parent) {
     const std::string self = std::format("   {}.algorithm", parent);
-    std::cout << self << "  Yielding from algorithm" << std::endl;
+    log(self) << "Yielding from algorithm" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
 
-    std::cout << self << "  Launching tool1" << std::endl;
+    log(self) << "Launching tool1" << std::endl;
     Gaudi::StatusCode code1 = co_await tool1(self);
-    std::cout << self << "  Result from tool1: " << code1 << std::endl;
+    log(self) << "Result from tool1: " << code1 << std::endl;
 
-    std::cout << self << "  Yielding from algorithm" << std::endl;
+    log(self) << "Yielding from algorithm" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
 
-    std::cout << self << "  Launching tool2" << std::endl;
+    log(self) << "Launching tool2" << std::endl;
     Gaudi::StatusCode code2 = co_await tool2(self);
-    std::cout << self << "  Result from tool2: " << code2 << std::endl;
+    log(self) << "Result from tool2: " << code2 << std::endl;
 
-    std::cout << self << "  Launching tool3" << std::endl;
+    log(self) << "Launching tool3" << std::endl;
     Gaudi::StatusCode code3 = co_await tool3(self);
-    std::cout << self << "  Result from tool3: " << code3 << std::endl;
+    log(self) << "Result from tool3: " << code3 << std::endl;
 
-    std::cout << self << "  Finishing algorithm" << std::endl;
+    log(self) << "Finishing algorithm" << std::endl;
     co_return Gaudi::StatusCode::SUCCESS;
 }
 
 int main() {
-    std::cout << "Starting main" << std::endl;
+    log() << "Starting main" << std::endl;
     auto alg = algorithm("main");
     while (!alg.done()) {
-        std::cout << "Value in main: " << alg.value() << std::endl;
+        log() << "Value in main: " << alg.value() << std::endl;
         alg.resume();
     }
-    std::cout << "Final value in main: " << alg.value() << std::endl;
+    log() << "Final value in main: " << alg.value() << std::endl;
     return EXIT_SUCCESS;
 }
