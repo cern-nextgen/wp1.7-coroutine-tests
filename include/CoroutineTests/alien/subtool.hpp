@@ -1,5 +1,5 @@
-#ifndef COROUTINETESTS_ALIEN_subtool_H
-#define COROUTINETESTS_ALIEN_subtool_H
+#ifndef COROUTINETESTS_ALIEN_SUBTOOL_H
+#define COROUTINETESTS_ALIEN_SUBTOOL_H
 
 #include <coroutine>
 #include <exception>
@@ -47,16 +47,16 @@ concept HasScheduler = requires(T t) {
     } -> std::convertible_to<std::function<void(std::coroutine_handle<>)>>;
 };
 
-// Nestable coroutine that can be scheduled on a threadpool.
-// Does co_return value, doesn't co_yield.
+// Nestable coroutine, can be co_awaited by other coroutines.
+// Returns a StatusCode value via co_return, doesn't co_yield.
 class [[nodiscard]] SubTool {
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    SubTool(handle_type coroutine_handle)
-        : m_coroutine(coroutine_handle) {}  // required by coroutines
+    // Constructor from coroutine handle
+    SubTool(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
     ~SubTool() {
         if (m_coroutine) {
             m_coroutine.destroy();
@@ -79,14 +79,13 @@ class [[nodiscard]] SubTool {
         return *this;
     }
 
-    // awaitable interface
-    // don't skip suspensions
+    // Awaitable interface: always suspend to allow async execution
     bool await_ready() const noexcept { return false; }
-    // when awaited, store the parent coroutine handle and reschedule this
-    // coroutine
+    // Awaitable interface: setup parent/scheduler relationship and transfer
+    // control to this coroutine
     template <HasScheduler T>
     inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
-    // nothing special on resume, doesn't produce a value
+    // Awaitable interface: return result or rethrow exception on resume
     StatusCode await_resume() const;
 
     private:
@@ -94,29 +93,31 @@ class [[nodiscard]] SubTool {
 };
 
 struct SubTool::promise_type {
-    // storage for the result value
+    // Storage for the co_return result value
     StatusCode m_value;
-    // storage for exceptions thrown in the coroutine
+    // Storage for exceptions thrown in the coroutine body
     std::exception_ptr m_exception;
-    // handle to the parent coroutine if the coroutine has one
+    // Handle to the parent coroutine that co_awaited this subtool
     std::coroutine_handle<> m_parent;
-    // handle to the threadpool
+    // Handle to scheduler to resume this coroutine and propagate to children
     std::function<void(std::coroutine_handle<>)> m_scheduler;
 
-    // enqueue the coroutine on the threadpool
+    // Accessor for scheduler used by child coroutines
+    const auto& get_scheduler() const { return m_scheduler; }
+    // Schedule resumption of subtool
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
-    // required by coroutines
+
+    // Required by coroutines: create the object
     SubTool get_return_object() { return {handle_type::from_promise(*this)}; }
-    // called on coroutine start
+    // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const { return {}; }
-    // called on coroutine completion
-    // on final_suspend reschedule the parent coroutine if it has one
+    // Required by coroutines: handle completion and resume parent
     auto final_suspend() const noexcept {
         struct final_awaiter {
-            // don't skip suspensions
+            // Don't skip final supersession
             bool await_ready() const noexcept { return false; }
-            // reschedule the parent coroutine if it has one or return control
-            // to the caller
+            // Resume parent coroutine with symmetric transfer or return to
+            // caller
             std::coroutine_handle<> await_suspend(handle_type handle) noexcept {
                 auto parent = handle.promise().m_parent;
                 if (parent) {
@@ -124,14 +125,14 @@ struct SubTool::promise_type {
                 }
                 return std::noop_coroutine();
             }
-            // nothing special on resume, doesn't produce a value
+            // No action needed on resume
             void await_resume() const noexcept {}
         };
         return final_awaiter{};
     }
-    // acts as a catch block for exceptions thrown in the coroutine
+    // Required by coroutines: capture exceptions for later rethrowing
     void unhandled_exception() { m_exception = std::current_exception(); }
-    // called on (implicit or explicit) co_return or co_return void
+    // Required by coroutines: store the co_return value
     void return_value(StatusCode value) { m_value = value; }
 };
 
@@ -150,4 +151,4 @@ inline StatusCode SubTool::await_resume() const {
     return m_coroutine.promise().m_value;
 }
 }  // namespace CoroutineTests::alien::subtool
-#endif  // COROUTINETESTS_ALIEN_subtool_H
+#endif  // COROUTINETESTS_ALIEN_SUBTOOL_H

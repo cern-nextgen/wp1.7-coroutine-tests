@@ -40,8 +40,8 @@ class StatusCode {
     Status m_status;
 };
 
-// Nestable coroutine that can be scheduled on a threadpool.
-// Does co_return value, doesn't co_yield.
+// Top-level coroutine that can be scheduled from outside.
+// Returns a StatusCode value via co_return, doesn't co_yield.
 class [[nodiscard]] Algorithm {
     public:
     struct promise_type;  // typedef required by coroutines
@@ -50,8 +50,8 @@ class [[nodiscard]] Algorithm {
 
     using scheduler_type = std::function<void(std::coroutine_handle<>)>;
 
-    Algorithm(handle_type coroutine_handle)
-        : m_coroutine(coroutine_handle) {}  // required by coroutines
+    // Required by coroutines
+    Algorithm(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
     ~Algorithm() {
         if (m_coroutine) {
             m_coroutine.destroy();
@@ -73,9 +73,8 @@ class [[nodiscard]] Algorithm {
         }
         return *this;
     }
-    // start the coroutine on the threadpool
+    // Schedule the algorithm to be run on the given scheduler
     inline std::future<StatusCode> schedule_on(const scheduler_type& scheduler);
-    inline StatusCode get() const;
 
     private:
     handle_type m_coroutine = nullptr;
@@ -83,30 +82,27 @@ class [[nodiscard]] Algorithm {
 };
 
 struct Algorithm::promise_type {
-    // storage for exceptions thrown in the coroutine
-    std::exception_ptr m_exception;
-    // handle to the parent coroutine if the coroutine has one
-    handle_type m_parent;
-    // handle to scheduler
+    // Handle to scheduler
     scheduler_type m_scheduler;
+    // Promise to communicate result back to caller
     std::promise<StatusCode> m_promise;
 
+    // Schedule resumption of algorithm
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
-
+    // Accessor for scheduler used by child coroutines
     const auto& get_scheduler() const { return m_scheduler; }
-    // required by coroutines
+
+    // Required by coroutines: create the object
     Algorithm get_return_object() { return {handle_type::from_promise(*this)}; }
-    // called on coroutine start
+    // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const noexcept { return {}; }
-    // called on coroutine completion
-    // on final_suspend reschedule the parent coroutine if it has one
+    // Required by coroutines: suspend on completion
     std::suspend_always final_suspend() const noexcept { return {}; }
-    // acts as a catch block for exceptions thrown in the coroutine
+    // Required by coroutines: handle exceptions thrown in the coroutine body
     void unhandled_exception() {
-        m_exception = std::current_exception();
-        m_promise.set_exception(m_exception);
+        m_promise.set_exception(std::current_exception());
     }
-    // called on (implicit or explicit) co_return or co_return void
+    // Required by coroutines: handle co_return <value>
     void return_value(StatusCode value) { m_promise.set_value(value); }
 };
 
