@@ -22,6 +22,9 @@ add_executable(pingpong pingpong.cpp)
 target_link_libraries(pingpong PRIVATE CoroutineTests)
 add_executable(gaudi gaudi.cpp)
 
+add_executable(alien alien.cpp)
+target_link_libraries(alien PRIVATE CoroutineTests)
+
 if(BUILD_STDEXEC)
   add_executable(stdexec_task stdexec_task.cpp)
   target_link_libraries(stdexec_task PRIVATE CoroutineTests STDEXEC::stdexec)

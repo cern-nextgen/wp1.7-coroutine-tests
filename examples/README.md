@@ -44,7 +44,7 @@ Instead of explicitly `co_await OutputAwaiter{value}` an `await_transform(T valu
 
 ## DataSink
 
-This example shows how additional data can be injected into thecoroutine frame. The main idea is to assign extra data from return type to a promise type member and use returned value from `auto value = co_await awaitable`.
+This example shows how additional data can be injected into the coroutine frame. The main idea is to assign extra data from return type to a promise type member and use returned value from `auto value = co_await awaitable`.
 To achieve this a custom `InputAwaiter` awaitable is defined, which defines `await_resume` that returns a value from promise type.
 
 ## Nestable Task
@@ -73,3 +73,10 @@ The "algorithm" coroutine can be manually resumed; each resumption continues fro
 ## stdexec_task
 
 This example shows usage of `task` coroutine return type from the [stdexec](https://github.com/NVIDIA/stdexec) library. The example is similar to the `Gaudi` example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `stdexec::task` return type is used, which provides integration with the `stdexec` execution model. Unlike `Gaudi` example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a `stdexec` scheduler which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in `Async` example.
+
+## Alien
+
+This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the `Gaudi` example. The "algorithm" coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
+- each coroutine implements `get_scheduler` method to provide access to its scheduler for its child coroutines
+- `co_await` a child coroutine transfers control to the child coroutine
+- `final_suspend` method in each coroutine resumes its parent coroutine

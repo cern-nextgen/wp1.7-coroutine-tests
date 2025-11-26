@@ -1,0 +1,121 @@
+#ifndef COROUTINETESTS_ALIEN_ALGORITHM_H
+#define COROUTINETESTS_ALIEN_ALGORITHM_H
+
+#include <coroutine>
+#include <exception>
+#include <functional>
+#include <future>
+#include <iostream>
+
+namespace CoroutineTests::alien::algorithm {
+
+class StatusCode {
+    public:
+    /// StatusCode values
+    enum Status { SUCCESS = 0, FAILURE = 1, UNDEFINED = 2 };
+    /// Constructor
+    StatusCode(Status status = UNDEFINED) : m_status(status) {}
+
+    /// Get the status of the statuscode
+    Status status() const { return m_status; }
+    /// Friend function to output the status code
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const StatusCode& status) {
+        os << "Algorithm::StatusCode::";
+        switch (status.status()) {
+            case StatusCode::SUCCESS:
+                os << "SUCCESS";
+                break;
+            case StatusCode::FAILURE:
+                os << "FAILURE";
+                break;
+            case StatusCode::UNDEFINED:
+                os << "UNDEFINED";
+                break;
+        }
+        return os;
+    }
+
+    private:
+    Status m_status;
+};
+
+// Top-level coroutine that can be scheduled from outside.
+// Returns a StatusCode value via co_return, doesn't co_yield.
+class [[nodiscard]] Algorithm {
+    public:
+    struct promise_type;  // typedef required by coroutines
+    using handle_type =
+        std::coroutine_handle<promise_type>;  // not required but useful
+
+    using scheduler_type = std::function<void(std::coroutine_handle<>)>;
+
+    // Required by coroutines
+    Algorithm(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
+    ~Algorithm() {
+        if (m_coroutine) {
+            m_coroutine.destroy();
+        }
+    }
+    Algorithm() = default;
+    Algorithm(const Algorithm&) = delete;
+    Algorithm& operator=(const Algorithm&) = delete;
+    Algorithm(Algorithm&& other) noexcept : m_coroutine{other.m_coroutine} {
+        other.m_coroutine = {};
+    }
+    Algorithm& operator=(Algorithm&& other) noexcept {
+        if (this != &other) {
+            if (m_coroutine) {
+                m_coroutine.destroy();
+            }
+            m_coroutine = other.m_coroutine;
+            other.m_coroutine = {};
+        }
+        return *this;
+    }
+    // Schedule the algorithm to be run on the given scheduler
+    inline std::future<StatusCode> schedule_on(const scheduler_type& scheduler);
+
+    private:
+    handle_type m_coroutine = nullptr;
+    bool m_started = false;
+};
+
+struct Algorithm::promise_type {
+    // Handle to scheduler
+    scheduler_type m_scheduler;
+    // Promise to communicate result back to caller
+    std::promise<StatusCode> m_promise;
+
+    // Schedule resumption of algorithm
+    void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
+    // Accessor for scheduler used by child coroutines
+    const auto& get_scheduler() const { return m_scheduler; }
+
+    // Required by coroutines: create the object
+    Algorithm get_return_object() { return {handle_type::from_promise(*this)}; }
+    // Required by coroutines: suspend immediately on start (lazy execution)
+    std::suspend_always initial_suspend() const noexcept { return {}; }
+    // Required by coroutines: suspend on completion
+    std::suspend_always final_suspend() const noexcept { return {}; }
+    // Required by coroutines: handle exceptions thrown in the coroutine body
+    void unhandled_exception() {
+        m_promise.set_exception(std::current_exception());
+    }
+    // Required by coroutines: handle co_return <value>
+    void return_value(StatusCode value) { m_promise.set_value(value); }
+};
+
+std::future<StatusCode> Algorithm::schedule_on(
+    const scheduler_type& scheduler) {
+    if (m_coroutine && !m_started) {
+        m_coroutine.promise().m_scheduler = scheduler;
+        m_coroutine.promise().reschedule();
+        m_started = true;
+        return m_coroutine.promise().m_promise.get_future();
+    }
+    throw std::runtime_error("Algorithm already started or invalid");
+}
+
+}  // namespace CoroutineTests::alien::algorithm
+#endif  // COROUTINETESTS_ALIEN_ALGORITHM_H
