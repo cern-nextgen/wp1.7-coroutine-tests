@@ -2,7 +2,7 @@
 #define COROUTINETESTS_THREADPOOL_H
 
 #include <condition_variable>
-#include <coroutine>
+#include <functional>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -25,9 +25,9 @@ class Threadpool {
         m_cond.notify_all();
     }
 
-    void enqueue_task(std::coroutine_handle<> coro) noexcept {
+    void enqueue_task(std::function<void()> task) noexcept {
         auto lock = std::unique_lock<std::mutex>(m_mutex);
-        m_tasks.push(coro);
+        m_tasks.push(task);
         m_cond.notify_one();
     }
 
@@ -36,7 +36,7 @@ class Threadpool {
 
     std::mutex m_mutex;
     std::condition_variable m_cond;
-    std::queue<std::coroutine_handle<>> m_tasks;
+    std::queue<std::function<void()>> m_tasks;
 
     std::atomic<bool> m_stop = false;
 
@@ -52,7 +52,7 @@ class Threadpool {
             auto task = m_tasks.front();
             m_tasks.pop();
             lock.unlock();
-            task.resume();
+            task();
         }
     }
 };
