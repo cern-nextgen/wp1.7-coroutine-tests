@@ -70,9 +70,9 @@ This example shows a hierarchy of coroutines inspired by the [Gaudi](https://git
 
 The "algorithm" coroutine can be manually resumed; each resumption continues from the innermost active coroutine. When that coroutine completes, control returns outward through the chain, and corresponding status code is returned back.
 
-## stdexec_task
+## Task exec
 
-This example shows usage of `task` coroutine return type from the [stdexec](https://github.com/NVIDIA/stdexec) library. The example is similar to the `Gaudi` example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `stdexec::task` return type is used, which provides integration with the `stdexec` execution model. Unlike `Gaudi` example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a `stdexec` scheduler which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in `Async` example.
+This example shows usage of `task` coroutine return type from future C++26 standard. The example can be compiled with either [stdexec](https://github.com/NVIDIA/stdexec) or [beman.task](https://github.com/bemanproject/execution) library. The example is similar to the `Gaudi` example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `task` return type is used, which provides integration with the "senders/receivers" execution model. Unlike `Gaudi` example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a "scheduler" which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in `Async` example.
 
 ## Alien
 
