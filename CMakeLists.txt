@@ -34,6 +34,31 @@ if(BUILD_STDEXEC)
   endif()
 endif()
 
+### beman.task  options
+
+option(BUILD_BEMAN_TASK "Build the beman.task sources included in CoroutineTests" TRUE)
+
+if (USE_SYSTEM_LIBS)
+  set(USE_SYSTEM_BEMAN_TASK_DEFAULT ON)
+else()
+  set(USE_SYSTEM_BEMAN_TASK_DEFAULT)
+endif()
+option(USE_SYSTEM_BEMAN_TASK
+  "Pick up an existing installation of beman.task from the build environment"
+  ${USE_SYSTEM_BEMAN_TASK_DEFAULT})
+unset(USE_SYSTEM_BEMAN_TASK_DEFAULT)
+
+if(BUILD_BEMAN_TASK)
+  if(CMAKE_CXX_STANDARD LESS 23)
+    message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}. Must be at least C++23 for Beman.task.")
+  endif()
+  if(USE_SYSTEM_BEMAN_TASK)
+    find_package(beman_task REQUIRED)
+  else()
+    add_subdirectory(extern/beman_task)
+  endif()
+endif()
+
 ## targets
 
 add_library(CoroutineTests INTERFACE)
