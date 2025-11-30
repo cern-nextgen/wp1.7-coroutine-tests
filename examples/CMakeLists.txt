@@ -34,4 +34,7 @@ if(BUILD_BEMAN_TASK)
   add_executable(task_beman task_exec.cpp)
   target_link_libraries(task_beman PRIVATE CoroutineTests beman::task)
   target_compile_definitions(task_beman PUBLIC "USE_BEMAN")
+
+  add_executable(hacked hacked.cpp)
+  target_link_libraries(hacked PRIVATE CoroutineTests beman::task hacked::task)
 endif()
