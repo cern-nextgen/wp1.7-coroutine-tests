@@ -16,6 +16,8 @@ FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE})
 set(STDEXEC_BUILD_EXAMPLES FALSE)
 set(STDEXEC_BUILD_TESTS FALSE)
 set(STDEXEC_BUILD_DOCS FALSE)
+set(STDEXEC_ENABLE_TBB FALSE)
+set(STDEXEC_ENABLE_TASKFLOW FALSE)
 
 # Get it into the current directory.
 FetchContent_MakeAvailable(stdexec)
