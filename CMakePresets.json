@@ -1,0 +1,40 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Configure Preset",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "BUILD_STDEXEC": "ON",
+                "BUILD_TBB": "ON",
+                "BUILD_EXAMPLES": "ON",
+                "BUILD_PERF": "ON"
+            }
+        },
+        {
+            "name": "20",
+            "displayName": "Configure preset constrained to C++20",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "CMAKE_CXX_STANDARD": "20",
+                "BUILD_BEMAN_TASK": "OFF"
+            }
+        },
+        {
+            "name": "23",
+            "displayName": "Configure preset constrained to C++23",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "CMAKE_CXX_STANDARD": "23",
+                "BUILD_BEMAN_TASK": "ON"
+            }
+        }
+    ]
+}
