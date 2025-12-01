@@ -10,7 +10,7 @@ endif()
 
 ## dependencies options
 
-option(USE_SYSTEM_LIBS "Use system libraries be default" FALSE)
+option(USE_SYSTEM_LIBS "Use system libraries by default" FALSE)
 
 ### stdexec options
 
@@ -41,7 +41,7 @@ option(BUILD_BEMAN_TASK "Build the beman.task sources included in CoroutineTests
 if (USE_SYSTEM_LIBS)
   set(USE_SYSTEM_BEMAN_TASK_DEFAULT ON)
 else()
-  set(USE_SYSTEM_BEMAN_TASK_DEFAULT)
+  set(USE_SYSTEM_BEMAN_TASK_DEFAULT OFF)
 endif()
 option(USE_SYSTEM_BEMAN_TASK
   "Pick up an existing installation of beman.task from the build environment"

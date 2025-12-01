@@ -9,7 +9,7 @@ set(COROUTINETESTS_STDEXEC_SOURCE
     "URL;https://github.com/NVIDIA/stdexec/archive/refs/tags/nvhpc-25.09.tar.gz;URL_MD5;e385824bb560a3ac36ce859a2e3ded1f"
     CACHE STRING "Source for stdexec, when built as part of this project")
 
-mark_as_advanced(COROUTINETESTS_STDEXEC__SOURCE)
+mark_as_advanced(COROUTINETESTS_STDEXEC_SOURCE)
 FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE})
 
 # Turn off build tests, examples, and docs.
