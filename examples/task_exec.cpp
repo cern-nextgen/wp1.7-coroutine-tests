@@ -30,15 +30,16 @@ struct Scope {
 #ifdef USE_BEMAN
     beman::execution::counting_scope scope;
     // helper for spawning with counting scope
-    static auto sched_spawn(auto&& scheduler, auto&& sender, auto&& token) {
+    static auto sched_spawn(auto scheduler, auto&& sender, auto&& token) {
+        auto work = execution::starts_on(
+            scheduler, std::forward<decltype(sender)>(sender));
         return execution::spawn(
             execution::write_env(
-                std::forward<decltype(sender)>(sender) |
-                    execution::upon_error(
-                        [](auto&&) noexcept { std::cout << "ERROR!\n"; }),
-                execution::detail::make_env(
-                    execution::get_scheduler,
-                    std::forward<decltype(scheduler)>(scheduler))),
+                std::move(work) | execution::upon_error([](auto&&) noexcept {
+                    std::cout << "ERROR!\n";
+                }),
+                execution::detail::make_env(execution::get_scheduler,
+                                            scheduler)),
             std::forward<decltype(token)>(token));
     }
 #else
@@ -301,10 +302,12 @@ int main() {
 
     // Start executing the algorithm without blocking main
     Scope scope;
-    scope.spawn(scheduler, []() -> execution::task<void> {
+    auto work = []() -> execution::task<void> {
+        log() << "Starting work\n";
         auto status = co_await algorithm("main");
         log() << "Final status of algorithm " << status << std::endl;
-    }());
+    }();
+    scope.spawn(scheduler, std::move(work));
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
