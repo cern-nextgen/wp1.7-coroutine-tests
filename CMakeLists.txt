@@ -59,6 +59,28 @@ if(BUILD_BEMAN_TASK)
   endif()
 endif()
 
+### tbb options
+
+option(BUILD_TBB "Build the tbb sources included in CoroutineTests" TRUE)
+
+if (USE_SYSTEM_LIBS)
+  set(USE_SYSTEM_TBB_DEFAULT ON)
+else()
+  set(USE_SYSTEM_TBB_DEFAULT OFF)
+endif()
+option(USE_SYSTEM_TBB
+  "Pick up an existing installation of tbb from the build environment"
+  ${USE_SYSTEM_TBB_DEFAULT})
+unset(USE_SYSTEM_TBB_DEFAULT)
+
+if(BUILD_TBB)
+  if(USE_SYSTEM_TBB)
+    find_package(tbb REQUIRED)
+  else()
+    add_subdirectory(extern/tbb)
+  endif()
+endif()
+
 ## targets
 
 add_library(CoroutineTests INTERFACE)
