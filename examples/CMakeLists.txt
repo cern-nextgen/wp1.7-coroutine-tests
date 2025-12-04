@@ -24,6 +24,8 @@ add_executable(gaudi gaudi.cpp)
 
 add_executable(alien alien.cpp)
 target_link_libraries(alien PRIVATE CoroutineTests)
+add_executable(alien_manual alien_manual.cpp)
+target_link_libraries(alien_manual PRIVATE CoroutineTests)
 
 if(BUILD_STDEXEC)
   add_executable(task_stdexec task_exec.cpp)

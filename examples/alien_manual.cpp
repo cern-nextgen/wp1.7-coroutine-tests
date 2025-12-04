@@ -1,13 +1,13 @@
+#include <atomic>
 #include <chrono>
 #include <coroutine>
-#include <exception>
 #include <format>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
 #include <thread>
 
-#include "CoroutineTests/alien/algorithm.hpp"
+#include "CoroutineTests/alien/manual_algorithm.hpp"
 #include "CoroutineTests/alien/subtool.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
@@ -140,7 +140,8 @@ CoroutineTests::alien::tool::Tool tool3(std::string_view parent) {
 }
 
 // Algorithm: co_awaits MockupAwaiter then tool1 then tool2 then tool3
-CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
+CoroutineTests::alien::manual_algorithm::Algorithm algorithm(
+    std::string_view parent) {
     auto self = std::format("   {}.algorithm", parent);
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Calling async API in algorithm" << std::endl;
@@ -162,21 +163,67 @@ CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
                   << std::endl;
     }
     log(self) << "Finishing algorithm" << std::endl;
-    co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
+    co_return CoroutineTests::alien::manual_algorithm::StatusCode::SUCCESS;
 }
+
+// Algorithm execution state
+enum class State { READY, SCHEDULED, /*SUSPENDED,*/ DONE };
 
 int main() {
     log() << "main Starting\n";
-    CoroutineTests::Threadpool threadpool(1);
-    auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Reschedule called, enqueueing resumption\n";
-        threadpool.enqueue_task(handle);
+
+    std::atomic<State> state{State::READY};
+    // Scheduler that sets READY state when rescheduled
+    auto scheduler = [&state](std::coroutine_handle<>) {
+        log() << "scheduler Reschedule called\n";
+        state.store(State::READY);
     };
-    log() << "main Launching algorithm...\n";
+    auto threadpool = CoroutineTests::Threadpool(2);
+
     auto t = algorithm("main");
-    auto future = t.schedule_on(scheduler);
-    log() << "main Waiting for algorithm completion...\n";
-    auto status = future.get();
-    log() << "main Final status of algorithm " << status << "\n";
+    t.set_scheduler(scheduler);
+    log() << "main Starting Algorithm\n";
+    CoroutineTests::alien::manual_algorithm::StatusCode result;
+
+    // Main loop resuming execution of algorithm on a threadpool when state is
+    // READY the awaitables will asynchronously set the state to READY when done
+    // other operations such as transition between coroutines won't change the
+    // state
+    while (state.load() != State::DONE) {
+        log() << "main Algorithm not DONE yet, waiting for READY state...\n";
+        while (true) {
+            State s = state.load();
+            if (s == State::READY || s == State::DONE)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (state.load() == State::DONE) {
+            log() << "main Detected DONE state, exiting loop\n";
+            break;
+        }
+        log() << "main Algorithm ready to resume, enqueueing...\n";
+        state.store(State::SCHEDULED);
+        threadpool.enqueue_task([&state, &t, &result]() {
+            std::optional<CoroutineTests::alien::manual_algorithm::StatusCode>
+                res;
+            try {
+                res = t.resume();
+            } catch (const std::exception& e) {
+                log() << "Worker thread caught exception from algorithm: "
+                      << e.what() << std::endl;
+                state.store(State::DONE);
+                result = CoroutineTests::alien::manual_algorithm::StatusCode::
+                    FAILURE;
+                return;
+            }
+            if (res.has_value()) {
+                result = res.value();
+                state.store(State::DONE);
+            }
+        });
+    }
+    log() << "main Algorithm finished with result: " << result << std::endl;
+
     return 0;
 }
