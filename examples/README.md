@@ -81,10 +81,15 @@ This is a variant of the `Task exec` example, but using a custom C++ senders/rec
 ## Alien
 
 This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the `Gaudi` example. The "algorithm" coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
+
 - each coroutine implements `get_scheduler` method to provide access to its scheduler for its child coroutines
 - `co_await` a child coroutine transfers control to the child coroutine
 - `final_suspend` method in each coroutine resumes its parent coroutine
 
 ## Alien manual
 
-This is an alternative implementation of the `Alien` example, where the "algorithm" coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the "algorithm" coroutine is ready to be resumed and internally inform the "algorithm" coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as  in the `Alien` example.
+This is an alternative implementation of the `Alien` example, where the "algorithm" coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the "algorithm" coroutine is ready to be resumed and internally inform the "algorithm" coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as in the `Alien` example.
+
+## Alien manual semaphore
+
+This example is a alternative of the `Alien manual` example, where instead of a custom scheduler, a binary semaphore is used to notify the caller when the "algorithm" coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
