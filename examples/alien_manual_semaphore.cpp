@@ -1,0 +1,231 @@
+#include <chrono>
+#include <coroutine>
+#include <format>
+#include <iostream>
+#include <semaphore>
+#include <stdexcept>
+#include <string_view>
+#include <thread>
+
+#include "CoroutineTests/alien/manual_algorithm.hpp"
+#include "CoroutineTests/alien/subtool.hpp"
+#include "CoroutineTests/alien/tool.hpp"
+#include "CoroutineTests/threadpool.hpp"
+
+std::ostream& log() {
+    return std::cout << std::this_thread::get_id() << "  ";
+}
+
+std::ostream& log(std::string_view self) {
+    return std::cout << std::this_thread::get_id() << "  " << self << "  ";
+}
+
+class StatusCode {
+    public:
+    /// StatusCode values
+    enum Status { SUCCESS = 0, FAILURE = 1, UNDEFINED = 2 };
+    /// Constructor
+    StatusCode(Status status = UNDEFINED) : m_status(status) {}
+
+    /// Get the status of the statuscode
+    Status status() const { return m_status; }
+    /// Friend function to output the status code
+    friend std::ostream& operator<<(std::ostream& os,
+                                    const StatusCode& status) {
+        os << "Algorithm::StatusCode::";
+        switch (status.status()) {
+            case StatusCode::SUCCESS:
+                os << "SUCCESS";
+                break;
+            case StatusCode::FAILURE:
+                os << "FAILURE";
+                break;
+            case StatusCode::UNDEFINED:
+                os << "UNDEFINED";
+                break;
+        }
+        return os;
+    }
+
+    private:
+    Status m_status;
+};
+
+struct MockupAwaiter {
+    std::chrono::milliseconds delay;
+    StatusCode status_code;
+    std::string_view parent;
+
+    bool await_ready() const noexcept { return false; }
+
+    template <typename T>
+    void await_suspend(std::coroutine_handle<T> handle) noexcept {
+        std::thread([this, handle]() {
+            const auto self = std::format("   {}.AsyncAPIMockup", parent);
+            log(self) << "Async operation started, will take " << delay.count()
+                      << " ms" << std::endl;
+            std::this_thread::sleep_for(delay);
+            log(self) << "Async operation finished" << std::endl;
+            handle.promise().reschedule();
+        }).detach();
+    }
+    StatusCode await_resume() const noexcept { return status_code; }
+};
+
+// co_awaits a MockupAwaiter
+CoroutineTests::alien::subtool::SubTool subtool(std::string_view parent) {
+    auto self = std::format("   {}.subtool", parent);
+    log(self) << "Calling async API in subtool" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(75),
+                                         StatusCode::SUCCESS, self};
+    log(self) << "Result from async API in subtool: " << status << std::endl;
+    log(self) << "Finishing subtool" << std::endl;
+    co_return CoroutineTests::alien::subtool::StatusCode::SUCCESS;
+}
+
+// throws
+CoroutineTests::alien::subtool::SubTool throwing_subtool(
+    std::string_view parent) {
+    auto self = std::format("   {}.throwing_subtool", parent);
+    log(self) << "Calling async API in throwing_subtool" << std::endl;
+    // simulate immediate failure without async work
+    log(self) << "About to throw exception" << std::endl;
+    throw std::runtime_error("throwing_subtool simulated failure");
+    co_return CoroutineTests::alien::subtool::StatusCode::FAILURE;
+}
+
+// co_awaits a MockupAwaiter
+CoroutineTests::alien::tool::Tool tool1(std::string_view parent) {
+    auto self = std::format("   {}.tool1", parent);
+    log(self) << "Calling async API in tool1" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(100),
+                                         StatusCode::SUCCESS, self};
+    log(self) << "Result from async API in tool1: " << status << std::endl;
+    log(self) << "Finishing tool1" << std::endl;
+    co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+}
+
+// co_awaits subtool
+CoroutineTests::alien::tool::Tool tool2(std::string_view parent) {
+    auto self = std::format("   {}.tool2", parent);
+    log(self) << "Calling async API in tool2" << std::endl;
+    auto status1 = co_await MockupAwaiter{std::chrono::milliseconds(10),
+                                          StatusCode::SUCCESS, self};
+    log(self) << "Result from async API in tool2: " << status1 << std::endl;
+    log(self) << "Launching tool1" << std::endl;
+    auto code = co_await tool1(self);
+    log(self) << "Result from tool1: " << code << std::endl;
+    log(self) << "Calling async API in tool2" << std::endl;
+    auto status2 = co_await MockupAwaiter{std::chrono::milliseconds(10),
+                                          StatusCode::FAILURE, self};
+    log(self) << "Result from async API in tool2: " << status2 << std::endl;
+    log(self) << "Finishing tool2" << std::endl;
+    co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
+}
+
+// tool3: co_awaits throwing_subtool, catches expected exception & rethrows
+CoroutineTests::alien::tool::Tool tool3(std::string_view parent) {
+    auto self = std::format("   {}.tool3", parent);
+    try {
+        auto code = co_await throwing_subtool(self);
+        log(self) << "throwing_subtool returned (unexpected): " << code
+                  << std::endl;
+        log(self) << "Finishing tool3" << std::endl;
+        co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+    } catch (const std::runtime_error& e) {
+        log(self) << "Caught exception (expected): " << e.what()
+                  << "; rethrowing" << std::endl;
+        throw e;
+    }
+}
+
+// Algorithm: co_awaits MockupAwaiter then tool1 then tool2 then tool3
+CoroutineTests::alien::manual_algorithm::Algorithm algorithm(
+    std::string_view parent) {
+    auto self = std::format("   {}.algorithm", parent);
+    log(self) << "Starting algorithm" << std::endl;
+    log(self) << "Calling async API in algorithm" << std::endl;
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(42),
+                                         StatusCode::SUCCESS, self};
+    log(self) << "Result from async API in algorithm: " << status << std::endl;
+    log(self) << "Launching tool1" << std::endl;
+    auto code1 = co_await tool1(self);
+    log(self) << "Result from tool1: " << code1 << std::endl;
+    log(self) << "Launching tool2" << std::endl;
+    auto code2 = co_await tool2(self);
+    log(self) << "Result from tool2: " << code2 << std::endl;
+    log(self) << "Launching tool3" << std::endl;
+    try {
+        co_await tool3(self);
+        log(self) << "Unreachable code" << std::endl;
+    } catch (const std::runtime_error& e) {
+        log(self) << "Caught exception  (expected) from tool3: " << e.what()
+                  << std::endl;
+    }
+    log(self) << "Finishing algorithm" << std::endl;
+    co_return CoroutineTests::alien::manual_algorithm::StatusCode::SUCCESS;
+}
+
+int main(int argc, char** argv) {
+
+    log() << "main Starting\n";
+
+    auto use_threadpool = argc > 1 && std::string(argv[1]) == "--mt";
+    std::unique_ptr<CoroutineTests::Threadpool> threadpool;
+    if (use_threadpool) {
+        threadpool = std::make_unique<CoroutineTests::Threadpool>(2);
+        log() << "main Using threadpool with 2 threads\n";
+    } else {
+        log() << "main Running single-threaded\n";
+    }
+
+    // Start in ready state
+    std::binary_semaphore sem(1);
+
+    bool done = false;
+    CoroutineTests::alien::manual_algorithm::StatusCode result;
+
+    // Scheduler that releases semaphore to signal readiness to resume
+    auto scheduler = [&](std::coroutine_handle<>) {
+        log() << "scheduler Reschedule called\n";
+        sem.release();
+    };
+
+    auto t = algorithm("main");
+    t.set_scheduler(scheduler);
+
+    auto resume_logic = [&]() {
+        try {
+            auto res = t.resume();
+            if (res.has_value()) {
+                result = res.value();
+                done = true;
+                sem.release();  // wake main to exit loop
+            }
+        } catch (const std::exception& e) {
+            log() << "Worker caught exception: " << e.what() << "\n";
+            result =
+                CoroutineTests::alien::manual_algorithm::StatusCode::FAILURE;
+            done = true;
+            sem.release();
+        }
+    };
+
+    log() << "main Scheduling Algorithm\n";
+
+    // Loop enqueuing resume on threadpool until coroutine is done or exception
+    // was thrown
+    while (!done) {
+        sem.acquire();  // Wait until coroutine needs to be resumed
+
+        log() << "main Resuming coroutine on worker thread\n";
+        if (use_threadpool) {
+            threadpool->enqueue_task(resume_logic);
+        } else {
+            resume_logic();
+        }
+    }
+
+    log() << "main Algorithm finished with result: " << result << std::endl;
+    return 0;
+}
