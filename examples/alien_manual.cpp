@@ -202,7 +202,7 @@ int main() {
             log() << "main Detected DONE state, exiting loop\n";
             break;
         }
-        log() << "main Algorithm ready to resume, enqueueing...\n";
+        log() << "main Algorithm ready to resume, enqueuing ...\n";
         state.store(State::SCHEDULED);
         threadpool.enqueue_task([&state, &t, &result]() {
             std::optional<CoroutineTests::alien::manual_algorithm::StatusCode>
