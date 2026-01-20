@@ -169,7 +169,7 @@ int main() {
     log() << "main Starting\n";
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Reschedule called, enqueueing resumption\n";
+        log() << "scheduler Reschedule called, enqueuing  resumption\n";
         threadpool.enqueue_task(handle);
     };
     log() << "main Launching algorithm...\n";

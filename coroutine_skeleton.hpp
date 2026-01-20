@@ -60,10 +60,10 @@ struct ReturnType::promise_type {
         return {ReturnType::handle_type::from_promise(*this)};
     }
     // REQUIRED
-    // called on coroutine start, then implicitly `co_await` the retuned value
+    // called on coroutine start, then implicitly `co_await` the returned value
     /*awaitable*/ initial_suspend();
     // REQUIRED
-    // called on coroutine completion, then implicitly `co_await` the retuned
+    // called on coroutine completion, then implicitly `co_await` the returned
     // value
     /*awaitable*/ final_suspend();
     // REQUIRED
