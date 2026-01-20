@@ -26,9 +26,11 @@ add_executable(alien alien.cpp)
 target_link_libraries(alien PRIVATE CoroutineTests)
 add_executable(alien_manual alien_manual.cpp)
 target_link_libraries(alien_manual PRIVATE CoroutineTests)
-
 add_executable(alien_manual_semaphore alien_manual_semaphore.cpp)
 target_link_libraries(alien_manual_semaphore PRIVATE CoroutineTests)
+add_executable(when_all when_all.cpp)
+target_link_libraries(when_all PRIVATE CoroutineTests)
+
 
 if(BUILD_STDEXEC)
   add_executable(task_stdexec task_exec.cpp)
