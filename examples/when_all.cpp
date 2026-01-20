@@ -1,3 +1,5 @@
+#include "CoroutineTests/alien/when_all.hpp"
+
 #include <chrono>
 #include <coroutine>
 #include <exception>
@@ -9,7 +11,6 @@
 #include "CoroutineTests/alien/algorithm.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
-#include "CoroutineTests/alien/when_all.hpp"
 
 // ------------------------------------------------------------
 // Logging helpers
@@ -79,7 +80,8 @@ struct MockupAwaiter {
 CoroutineTests::alien::tool::Tool toolA(std::string_view parent) {
     auto self = std::format("   {}.toolA", parent);
     log(self) << "Calling async API in toolA" << std::endl;
-    auto status = co_await MockupAwaiter{std::chrono::milliseconds(80), StatusCode::SUCCESS, self};
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(80),
+                                         StatusCode::SUCCESS, self};
     log(self) << "Result from async API in toolA: " << status << std::endl;
     log(self) << "Finishing toolA" << std::endl;
     co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
@@ -89,7 +91,8 @@ CoroutineTests::alien::tool::Tool toolA(std::string_view parent) {
 CoroutineTests::alien::tool::Tool toolB(std::string_view parent) {
     auto self = std::format("   {}.toolB", parent);
     log(self) << "Calling async API in toolB" << std::endl;
-    auto status = co_await MockupAwaiter{std::chrono::milliseconds(40), StatusCode::SUCCESS, self};
+    auto status = co_await MockupAwaiter{std::chrono::milliseconds(40),
+                                         StatusCode::SUCCESS, self};
     log(self) << "Result from async API in toolB: " << status << std::endl;
     log(self) << "Finishing toolB" << std::endl;
     co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
@@ -102,7 +105,8 @@ CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
     log(self) << "Launching toolA and toolB in parallel\n";
     try {
         auto [codeA, codeB] = co_await when_all(toolA(self), toolB(self));
-        log(self) << "Result from toolA: " << codeA << ", Result from toolB: " << codeB << '\n';
+        log(self) << "Result from toolA: " << codeA
+                  << ", Result from toolB: " << codeB << '\n';
 
     } catch (const std::exception& e) {
         log(self) << "when_all threw: " << e.what() << '\n';
