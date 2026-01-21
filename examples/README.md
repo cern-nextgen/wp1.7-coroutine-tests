@@ -96,4 +96,4 @@ This example is a alternative of the `Alien manual` example, where instead of a 
 
 ## When all
 
-This example demonstrates a `when_all` algorithm compatible with "alien" coroutine semantics. The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed.
+This example demonstrates a `when_all` algorithm compatible with "alien" coroutine semantics. The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
