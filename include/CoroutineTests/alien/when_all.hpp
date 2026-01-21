@@ -11,7 +11,11 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
-#include <utility>
+#include <variant>
+
+namespace CoroutineTests::alien {
+
+namespace detail {
 
 template <typename T>
 concept HasScheduler = requires(T t) {
@@ -20,8 +24,8 @@ concept HasScheduler = requires(T t) {
     } -> std::convertible_to<std::function<void(std::coroutine_handle<>)>>;
 };
 
-namespace CoroutineTests::alien::detail {
-
+// get awaiter from an awaitable, try out different ways according to the
+// standard (await_transform not included)
 template <typename T>
 decltype(auto) get_awaiter(T&& value) {
     if constexpr (requires { std::forward<T>(value).operator co_await(); }) {
@@ -35,38 +39,40 @@ decltype(auto) get_awaiter(T&& value) {
     }
 }
 
+// type of the awaiter obtained from an awaitable
 template <typename T>
 using awaiter_t =
     std::remove_reference_t<decltype(get_awaiter(std::declval<T>()))>;
 
+// type returned by await_resume of the awaiter
 template <typename T>
 using await_result_t = decltype(std::declval<awaiter_t<T>&>().await_resume());
 
+// type to store the result of awaited awaitable
+// if void, use monostate, else use the actual result type
 template <typename T>
 using stored_result_t = std::conditional_t<std::is_void_v<await_result_t<T>>,
                                            std::monostate, await_result_t<T>>;
 
-}  // namespace CoroutineTests::alien::detail
-
 // Helper coroutine type to synchronize multiple coroutines inside
 // WhenAllAwaitable
-class [[nodiscard]] helper_task {
+class [[nodiscard]] HelperTask {
     public:
     struct promise_type;
     using handle_type = std::coroutine_handle<promise_type>;
-    explicit helper_task(handle_type h) : m_coroutine(h) {}
-    ~helper_task() {
+    explicit HelperTask(handle_type h) : m_coroutine(h) {}
+    ~HelperTask() {
         if (m_coroutine) {
             m_coroutine.destroy();
         }
     }
-    helper_task() = default;
-    helper_task(const helper_task&) = delete;
-    helper_task& operator=(const helper_task&) = delete;
-    helper_task(helper_task&& other) noexcept : m_coroutine(other.m_coroutine) {
+    HelperTask() = default;
+    HelperTask(const HelperTask&) = delete;
+    HelperTask& operator=(const HelperTask&) = delete;
+    HelperTask(HelperTask&& other) noexcept : m_coroutine(other.m_coroutine) {
         other.m_coroutine = {};
     }
-    helper_task& operator=(helper_task&& other) noexcept {
+    HelperTask& operator=(HelperTask&& other) noexcept {
         if (this != &other) {
             if (m_coroutine) {
                 m_coroutine.destroy();
@@ -80,32 +86,34 @@ class [[nodiscard]] helper_task {
     handle_type handle() const noexcept { return m_coroutine; }
 
     struct promise_type {
-        std::coroutine_handle<> parent{};
-        std::atomic_size_t* remaining{};
-        std::exception_ptr* exception{};
-        std::mutex* exception_mutex{};
-        std::function<void(std::coroutine_handle<>)> scheduler;
+        std::coroutine_handle<> m_parent{};
+        std::atomic_size_t* m_remaining{};
+        std::exception_ptr* m_exception{};
+        std::mutex* m_exception_mutex{};
+        std::function<void(std::coroutine_handle<>)> m_scheduler;
 
-        template <class A, class O>
-        promise_type(A*, O*, std::coroutine_handle<> parent_,
-                     std::atomic_size_t* remaining_,
-                     std::exception_ptr* exception_,
-                     std::mutex* exception_mutex_,
-                     std::function<void(std::coroutine_handle<>)> scheduler_)
-            : parent(parent_),
-              remaining(remaining_),
-              exception(exception_),
-              exception_mutex(exception_mutex_),
-              scheduler(std::move(scheduler_)) {}
+        // Non-default constructor to pass context from WhenAllAwaitable
+        // The constructor will be used if coroutine function has the same
+        // signature Unused parameters are only to match the signature
+        template <class Awaitable, class Output>
+        promise_type(Awaitable*, Output*, std::coroutine_handle<> parent,
+                     std::atomic_size_t* remaining,
+                     std::exception_ptr* exception, std::mutex* exception_mutex,
+                     std::function<void(std::coroutine_handle<>)> scheduler)
+            : m_parent(parent),
+              m_remaining(remaining),
+              m_exception(exception),
+              m_exception_mutex(exception_mutex),
+              m_scheduler(std::move(scheduler)) {}
 
         // Accessor for scheduler used by child coroutines
-        const auto& get_scheduler() const { return scheduler; }
+        const auto& get_scheduler() const { return m_scheduler; }
         // Schedule resumption of this helper
-        void reschedule() { scheduler(handle_type::from_promise(*this)); }
+        void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
 
         // Required by coroutines: create the object
-        helper_task get_return_object() {
-            return helper_task{handle_type::from_promise(*this)};
+        HelperTask get_return_object() {
+            return HelperTask{handle_type::from_promise(*this)};
         }
 
         // Required by coroutines: suspend immediately on start (lazy execution)
@@ -119,11 +127,11 @@ class [[nodiscard]] helper_task {
                 // the last child
                 void await_suspend(handle_type h) noexcept {
                     auto& promise = h.promise();
-                    if (!promise.remaining) {
+                    if (!promise.m_remaining) {
                         return;
                     }
-                    if (promise.remaining->fetch_sub(1) == 1) {
-                        promise.scheduler(promise.parent);
+                    if (promise.m_remaining->fetch_sub(1) == 1) {
+                        promise.m_scheduler(promise.m_parent);
                     }
                 }
                 // Nothing special on resume
@@ -135,18 +143,18 @@ class [[nodiscard]] helper_task {
         void return_void() noexcept {}
 
         void unhandled_exception() noexcept {
-            if (!exception) {
+            if (!m_exception) {
                 return;
             }
 
-            if (exception_mutex) {
-                std::scoped_lock lock(*exception_mutex);
-                if (!*exception) {
-                    *exception = std::current_exception();
+            if (m_exception_mutex) {
+                std::scoped_lock lock(*m_exception_mutex);
+                if (!*m_exception) {
+                    *m_exception = std::current_exception();
                 }
             } else {
-                if (!*exception) {
-                    *exception = std::current_exception();
+                if (!*m_exception) {
+                    *m_exception = std::current_exception();
                 }
             }
         }
@@ -157,22 +165,16 @@ class [[nodiscard]] helper_task {
 };
 
 // helper task to co_await forwarded awaitable and store result
+// The unused arguments are are used implicitly for by HelperTask promise type
+// construction
 template <typename Awaitable>
-helper_task make_helper_task(
-    Awaitable* awaitable,
-    std::optional<CoroutineTests::alien::detail::stored_result_t<Awaitable>>*
-        out,
-    std::coroutine_handle<> parent, std::atomic_size_t* remaining,
-    std::exception_ptr* exception, std::mutex* exception_mutex,
-    std::function<void(std::coroutine_handle<>)> scheduler) {
-    (void)parent;
-    (void)remaining;
-    (void)exception;
-    (void)exception_mutex;
-    (void)scheduler;
+HelperTask make_helper_task(
+    Awaitable* awaitable, std::optional<stored_result_t<Awaitable>>* out,
+    std::coroutine_handle<> /*parent*/, std::atomic_size_t* /*remaining*/,
+    std::exception_ptr* /*exception*/, std::mutex* /*exception_mutex*/,
+    std::function<void(std::coroutine_handle<>)> /*scheduler*/) {
 
-    if constexpr (std::is_void_v<CoroutineTests::alien::detail::await_result_t<
-                      Awaitable>>) {
+    if constexpr (std::is_void_v<await_result_t<Awaitable>>) {
         co_await *awaitable;
         if (out) {
             out->emplace(std::monostate{});
@@ -235,8 +237,7 @@ class WhenAllAwaitable {
     // helper to put the results into a tuple
     template <std::size_t... I>
     auto take_results(std::index_sequence<I...>) {
-        return std::tuple<
-            CoroutineTests::alien::detail::stored_result_t<Awaitables>...>{
+        return std::tuple<detail::stored_result_t<Awaitables>...>{
             std::move(*std::get<I>(m_results))...};
     }
 
@@ -248,10 +249,9 @@ class WhenAllAwaitable {
     // scheduler to resume coroutines
     std::function<void(std::coroutine_handle<>)> m_scheduler;
     // helper tasks awaiting each awaitable
-    std::array<helper_task, sizeof...(Awaitables)> m_tasks{};
+    std::array<detail::HelperTask, sizeof...(Awaitables)> m_tasks{};
     // storage for results of each awaitable
-    std::tuple<std::optional<
-        CoroutineTests::alien::detail::stored_result_t<Awaitables>>...>
+    std::tuple<std::optional<detail::stored_result_t<Awaitables>>...>
         m_results{};
     // counter for remaining unfinished awaitables
     std::atomic_size_t m_remaining{0};
@@ -261,11 +261,14 @@ class WhenAllAwaitable {
     std::exception_ptr m_exception{};
 };
 
+}  // namespace detail
+
 // factory function to create WhenAllAwaitable
 template <typename... Awaitables>
 auto when_all(Awaitables&&... awaitables) {
-    return WhenAllAwaitable<Awaitables...>(
+    return detail::WhenAllAwaitable<Awaitables...>(
         std::forward<Awaitables>(awaitables)...);
 }
 
+}  // namespace CoroutineTests::alien
 #endif  // COROUTINETESTS_ALIEN_WHEN_ALL_H

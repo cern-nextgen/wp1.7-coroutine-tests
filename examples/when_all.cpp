@@ -79,6 +79,7 @@ struct MockupAwaiter {
 // co_await a MockupAwaiter
 CoroutineTests::alien::tool::Tool toolA(std::string_view parent) {
     auto self = std::format("   {}.toolA", parent);
+    log(self) << "Starting toolA" << std::endl;
     log(self) << "Calling async API in toolA" << std::endl;
     auto status = co_await MockupAwaiter{std::chrono::milliseconds(80),
                                          StatusCode::SUCCESS, self};
@@ -90,6 +91,7 @@ CoroutineTests::alien::tool::Tool toolA(std::string_view parent) {
 // co_await a MockupAwaiter
 CoroutineTests::alien::tool::Tool toolB(std::string_view parent) {
     auto self = std::format("   {}.toolB", parent);
+    log(self) << "Starting toolB" << std::endl;
     log(self) << "Calling async API in toolB" << std::endl;
     auto status = co_await MockupAwaiter{std::chrono::milliseconds(40),
                                          StatusCode::SUCCESS, self};
@@ -102,11 +104,15 @@ CoroutineTests::alien::tool::Tool toolB(std::string_view parent) {
 CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
     auto self = std::format("   {}.algorithm", parent);
     log(self) << "Starting algorithm\n";
-    log(self) << "Launching toolA and toolB in parallel\n";
+    log(self) << "Launching toolA, toolB and MockupAwaiter in parallel\n";
     try {
-        auto [codeA, codeB] = co_await when_all(toolA(self), toolB(self));
+        auto [codeA, codeB, codeC] = co_await CoroutineTests::alien::when_all(
+            toolA(self), toolB(self),
+            MockupAwaiter{std::chrono::milliseconds(20), StatusCode::SUCCESS,
+                          self});
         log(self) << "Result from toolA: " << codeA
-                  << ", Result from toolB: " << codeB << '\n';
+                  << ", result from toolB: " << codeB
+                  << ", result from MockupAwaiter: " << codeC << '\n';
 
     } catch (const std::exception& e) {
         log(self) << "when_all threw: " << e.what() << '\n';
@@ -120,7 +126,7 @@ int main() {
     log() << "main Starting\n";
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Reschedule called, enqueuing  resumption\n";
+        log() << "scheduler Schedule called, enqueuing  execution\n";
         threadpool.enqueue_task(handle);
     };
     log() << "main Launching algorithm...\n";
