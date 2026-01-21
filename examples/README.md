@@ -93,3 +93,7 @@ This is an alternative implementation of the `Alien` example, where the "algorit
 ## Alien manual semaphore
 
 This example is a alternative of the `Alien manual` example, where instead of a custom scheduler, a binary semaphore is used to notify the caller when the "algorithm" coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
+
+## When all
+
+This example demonstrates a `when_all` algorithm compatible with "alien" coroutine semantics. The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed.
