@@ -13,15 +13,13 @@ The project requires a C++20 compiler with coroutine support.
 To build the project run:
 
 ```sh
-cmake --preset 20 -B build
-cmake --build build
+cmake --workflow --preset 20
 ```
 
-Building the examples using `std::generator` or `beman.task` require C++23 standard:
+Building the examples using `std::generator` or `beman.task` requires C++23 standard:
 
 ```sh
-cmake --preset 23 -B build
-cmake --build build
+cmake --workflow --preset 23
 ```
 
 Then run the examples, for instance:

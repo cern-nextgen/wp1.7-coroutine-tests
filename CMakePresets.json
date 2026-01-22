@@ -5,6 +5,7 @@
             "name": "default",
             "displayName": "Default Configure Preset",
             "hidden": true,
+            "binaryDir": "${sourceDir}/build/",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
@@ -35,6 +36,58 @@
                 "CMAKE_CXX_STANDARD": "23",
                 "BUILD_BEMAN_TASK": "ON"
             }
+        }
+    ],
+    "buildPresets": [
+        {   "name": "default",
+            "displayName": "Default Build Preset",
+            "hidden": true,
+            "configurePreset": "default",
+            "jobs": 0
+        },
+        {
+            "name": "20",
+            "displayName": "Build with C++20",
+            "configurePreset": "20",
+            "inherits": [
+                "default"
+            ]
+        },
+        {
+            "name": "23",
+            "displayName": "Build with C++23",
+            "configurePreset": "23",
+            "inherits": [
+                "default"
+            ]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "20",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "20"
+                },
+                {
+                    "type": "build",
+                    "name": "20"
+                }
+            ]
+        },
+        {
+            "name": "23",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "23"
+                },
+                {
+                    "type": "build",
+                    "name": "23"
+                }
+            ]
         }
     ]
 }
