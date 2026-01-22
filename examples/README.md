@@ -70,17 +70,17 @@ This example shows a hierarchy of coroutines inspired by the [Gaudi](https://git
 
 The "algorithm" coroutine can be manually resumed; each resumption continues from the innermost active coroutine. When that coroutine completes, control returns outward through the chain, and corresponding status code is returned back.
 
-## Task exec
+## Exec task
 
-This example shows usage of `task` coroutine return type from future C++26 standard. The example can be compiled with either [stdexec](https://github.com/NVIDIA/stdexec) or [beman.task](https://github.com/bemanproject/execution) library. The example is similar to the `Gaudi` example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `task` return type is used, which provides integration with the "senders/receivers" execution model. Unlike `Gaudi` example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a "scheduler" which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in `Async` example.
+This example shows usage of `task` coroutine return type from future C++26 standard. The example can be compiled with either [stdexec](https://github.com/NVIDIA/stdexec) or [beman.task](https://github.com/bemanproject/execution) library. The example is similar to the "Gaudi" example, featuring a hierarchy of coroutines representing "algorithms" and "tools". The main difference is that the `task` return type is used, which provides integration with the "senders/receivers" execution model. Unlike "Gaudi" example the "algorithm" coroutine doesn't have to be manually resumed; instead it is started by submitting it to a "scheduler" which handles the execution of the coroutine and its nested coroutines. A custom sender simulating call to an asynchronous API is also implemented, similar to the one in "Async" example.
 
-## TBB scheduler
+## Exec TBB
 
-This is a variant of the `Task exec` example, but using a custom C++ senders/receivers scheduler to execute task coroutines on Intel TBB task arena.
+This is a variant of the "Exec task" example, but using a custom C++ senders/receivers scheduler to execute task coroutines on Intel TBB task arena.
 
 ## Alien
 
-This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the `Gaudi` example. The "algorithm" coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
+This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the "Gaudi" example. The "algorithm" coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
 
 - each coroutine implements `get_scheduler` method to provide access to its scheduler for its child coroutines
 - `co_await` a child coroutine transfers control to the child coroutine
@@ -88,12 +88,12 @@ This example demonstrates how multiple coroutine types that know nothing about e
 
 ## Alien manual
 
-This is an alternative implementation of the `Alien` example, where the "algorithm" coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the "algorithm" coroutine is ready to be resumed and internally inform the "algorithm" coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as in the `Alien` example.
+This is an alternative implementation of the "Alien" example, where the "algorithm" coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the "algorithm" coroutine is ready to be resumed and internally inform the "algorithm" coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as in the "Alien" example.
 
 ## Alien manual semaphore
 
-This example is a alternative of the `Alien manual` example, where instead of a custom scheduler, a binary semaphore is used to notify the caller when the "algorithm" coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
+This example is a alternative of the "Alien manual" example, where instead of a custom scheduler, a binary semaphore is used to notify the caller when the "algorithm" coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
 
-## When all
+## Alien when all
 
 This example demonstrates a `when_all` algorithm compatible with "alien" coroutine semantics. The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
