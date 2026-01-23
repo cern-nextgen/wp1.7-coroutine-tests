@@ -12,7 +12,7 @@
 #include "logging_utils.hpp"  // log, format_name
 
 // co_awaits a AsyncTimer
-CoroutineTests::alien::subtool::SubTool subtool(std::string_view parent) {
+CoroutineTests::alien::subtool::Task subtool(std::string_view parent) {
     const auto self = format_name(parent, "subtool");
     log(self) << "Calling async API in subtool" << std::endl;
     auto status = co_await AsyncTimer{std::chrono::milliseconds(75),
@@ -23,8 +23,7 @@ CoroutineTests::alien::subtool::SubTool subtool(std::string_view parent) {
 }
 
 // throws
-CoroutineTests::alien::subtool::SubTool throwing_subtool(
-    std::string_view parent) {
+CoroutineTests::alien::subtool::Task throwing_subtool(std::string_view parent) {
     const auto self = format_name(parent, "throwing_subtool");
     log(self) << "Calling async API in throwing_subtool" << std::endl;
     // simulate immediate failure without async work
@@ -34,7 +33,7 @@ CoroutineTests::alien::subtool::SubTool throwing_subtool(
 }
 
 // co_awaits a AsyncTimer
-CoroutineTests::alien::tool::Tool tool1(std::string_view parent) {
+CoroutineTests::alien::tool::Task tool1(std::string_view parent) {
     const auto self = format_name(parent, "tool1");
     log(self) << "Calling async API in tool1" << std::endl;
     auto status = co_await AsyncTimer{std::chrono::milliseconds(100),
@@ -45,7 +44,7 @@ CoroutineTests::alien::tool::Tool tool1(std::string_view parent) {
 }
 
 // co_awaits subtool
-CoroutineTests::alien::tool::Tool tool2(std::string_view parent) {
+CoroutineTests::alien::tool::Task tool2(std::string_view parent) {
     const auto self = format_name(parent, "tool2");
     log(self) << "Calling async API in tool2" << std::endl;
     auto status1 = co_await AsyncTimer{std::chrono::milliseconds(10),
@@ -63,7 +62,7 @@ CoroutineTests::alien::tool::Tool tool2(std::string_view parent) {
 }
 
 // tool3: co_awaits throwing_subtool, catches expected exception & rethrows
-CoroutineTests::alien::tool::Tool tool3(std::string_view parent) {
+CoroutineTests::alien::tool::Task tool3(std::string_view parent) {
     const auto self = format_name(parent, "tool3");
     try {
         auto code = co_await throwing_subtool(self);
@@ -78,8 +77,8 @@ CoroutineTests::alien::tool::Tool tool3(std::string_view parent) {
     }
 }
 
-// Algorithm: co_awaits AsyncTimer then tool1 then tool2 then tool3
-CoroutineTests::alien::manual_algorithm::Algorithm algorithm(
+// Task: co_awaits AsyncTimer then tool1 then tool2 then tool3
+CoroutineTests::alien::manual_algorithm::Task algorithm(
     std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
@@ -150,7 +149,7 @@ int main(int argc, char** argv) {
         }
     };
 
-    log() << "main Scheduling Algorithm" << std::endl;
+    log() << "main Scheduling Task" << std::endl;
 
     // Loop enqueuing resume on threadpool until coroutine is done or exception
     // was thrown
@@ -165,6 +164,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    log() << "main Algorithm finished with result: " << result << std::endl;
+    log() << "main Task finished with result: " << result << std::endl;
     return 0;
 }

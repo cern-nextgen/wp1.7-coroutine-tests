@@ -21,7 +21,7 @@ class StatusCode {
     /// Friend function to output the status code
     friend std::ostream& operator<<(std::ostream& os,
                                     const StatusCode& status) {
-        os << "SubTool::StatusCode::";
+        os << "subtool::StatusCode::";
         switch (status.status()) {
             case StatusCode::SUCCESS:
                 os << "SUCCESS";
@@ -49,26 +49,26 @@ concept HasScheduler = requires(T t) {
 
 // Nestable coroutine, can be co_awaited by other coroutines.
 // Returns a StatusCode value via co_return, doesn't co_yield.
-class [[nodiscard]] SubTool {
+class [[nodiscard]] Task {
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
     // Constructor from coroutine handle
-    SubTool(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
-    ~SubTool() {
+    Task(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
+    ~Task() {
         if (m_coroutine) {
             m_coroutine.destroy();
         }
     }
-    SubTool() = default;
-    SubTool(const SubTool&) = delete;
-    SubTool& operator=(const SubTool&) = delete;
-    SubTool(SubTool&& other) noexcept : m_coroutine{other.m_coroutine} {
+    Task() = default;
+    Task(const Task&) = delete;
+    Task& operator=(const Task&) = delete;
+    Task(Task&& other) noexcept : m_coroutine{other.m_coroutine} {
         other.m_coroutine = {};
     }
-    SubTool& operator=(SubTool&& other) noexcept {
+    Task& operator=(Task&& other) noexcept {
         if (this != &other) {
             if (m_coroutine) {
                 m_coroutine.destroy();
@@ -92,23 +92,23 @@ class [[nodiscard]] SubTool {
     handle_type m_coroutine = nullptr;
 };
 
-struct SubTool::promise_type {
+struct Task::promise_type {
     // Storage for the co_return result value
     StatusCode m_value;
     // Storage for exceptions thrown in the coroutine body
     std::exception_ptr m_exception;
-    // Handle to the parent coroutine that co_awaited this subtool
+    // Handle to the parent coroutine that co_awaited this task
     std::coroutine_handle<> m_parent;
     // Handle to scheduler to resume this coroutine and propagate to children
     std::function<void(std::coroutine_handle<>)> m_scheduler;
 
     // Accessor for scheduler used by child coroutines
     const auto& get_scheduler() const { return m_scheduler; }
-    // Schedule resumption of subtool
+    // Schedule resumption of this task
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
 
     // Required by coroutines: create the object
-    SubTool get_return_object() { return {handle_type::from_promise(*this)}; }
+    Task get_return_object() { return {handle_type::from_promise(*this)}; }
     // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const { return {}; }
     // Required by coroutines: handle completion and resume parent
@@ -137,14 +137,14 @@ struct SubTool::promise_type {
 };
 
 template <HasScheduler T>
-inline SubTool::handle_type SubTool::await_suspend(
+inline Task::handle_type Task::await_suspend(
     std::coroutine_handle<T> handle) noexcept {
     m_coroutine.promise().m_parent = handle;
     m_coroutine.promise().m_scheduler = handle.promise().get_scheduler();
     return m_coroutine;
 }
 
-inline StatusCode SubTool::await_resume() const {
+inline StatusCode Task::await_resume() const {
     if (m_coroutine.promise().m_exception) {
         std::rethrow_exception(m_coroutine.promise().m_exception);
     }
