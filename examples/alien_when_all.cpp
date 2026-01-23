@@ -37,8 +37,9 @@ CoroutineTests::alien::tool::Tool toolB(std::string_view parent) {
 // co_await toolA and toolB in parallel via when_all
 CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
-    log(self) << "Starting algorithm\n";
-    log(self) << "Launching toolA, toolB and AsyncTimer in parallel\n";
+    log(self) << "Starting algorithm" << std::endl;
+    log(self) << "Launching toolA, toolB and AsyncTimer in parallel"
+              << std::endl;
     try {
         auto [codeA, codeB, codeC] = co_await CoroutineTests::alien::when_all(
             toolA(self), toolB(self),
@@ -46,10 +47,10 @@ CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
                        self});
         log(self) << "Result from toolA: " << codeA
                   << ", result from toolB: " << codeB
-                  << ", result from AsyncTimer: " << codeC << '\n';
+                  << ", result from AsyncTimer: " << codeC << std::endl;
 
     } catch (const std::exception& e) {
-        log(self) << "when_all threw: " << e.what() << '\n';
+        log(self) << "when_all threw: " << e.what() << std::endl;
         co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
     }
     log(self) << "Finishing algorithm" << std::endl;
@@ -57,17 +58,17 @@ CoroutineTests::alien::algorithm::Algorithm algorithm(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting\n";
+    log() << "main Starting" << std::endl;
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Schedule called, enqueuing  execution\n";
+        log() << "scheduler Schedule called, enqueuing  execution" << std::endl;
         threadpool.enqueue_task(handle);
     };
-    log() << "main Launching algorithm...\n";
+    log() << "main Launching algorithm..." << std::endl;
     auto t = algorithm("main");
     auto future = t.schedule_on(scheduler);
-    log() << "main Waiting for algorithm completion...\n";
+    log() << "main Waiting for algorithm completion..." << std::endl;
     auto status = future.get();
-    log() << "main Final status of algorithm " << status << "\n";
+    log() << "main Final status of algorithm " << status << "" << std::endl;
     return 0;
 }

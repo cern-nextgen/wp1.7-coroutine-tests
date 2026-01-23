@@ -107,15 +107,15 @@ CoroutineTests::alien::manual_algorithm::Algorithm algorithm(
 
 int main(int argc, char** argv) {
 
-    log() << "main Starting\n";
+    log() << "main Starting" << std::endl;
 
     auto use_threadpool = argc > 1 && std::string(argv[1]) == "--mt";
     std::unique_ptr<CoroutineTests::Threadpool> threadpool;
     if (use_threadpool) {
         threadpool = std::make_unique<CoroutineTests::Threadpool>(2);
-        log() << "main Using threadpool with 2 threads\n";
+        log() << "main Using threadpool with 2 threads" << std::endl;
     } else {
-        log() << "main Running single-threaded\n";
+        log() << "main Running single-threaded" << std::endl;
     }
 
     // Start in ready state
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 
     // Scheduler that releases semaphore to signal readiness to resume
     auto scheduler = [&](std::coroutine_handle<>) {
-        log() << "scheduler Schedule called\n";
+        log() << "scheduler Schedule called" << std::endl;
         sem.release();
     };
 
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
                 sem.release();  // wake main to exit loop
             }
         } catch (const std::exception& e) {
-            log() << "Worker caught exception: " << e.what() << "\n";
+            log() << "Worker caught exception: " << e.what() << "" << std::endl;
             result =
                 CoroutineTests::alien::manual_algorithm::StatusCode::FAILURE;
             done = true;
@@ -150,14 +150,14 @@ int main(int argc, char** argv) {
         }
     };
 
-    log() << "main Scheduling Algorithm\n";
+    log() << "main Scheduling Algorithm" << std::endl;
 
     // Loop enqueuing resume on threadpool until coroutine is done or exception
     // was thrown
     while (!done) {
         sem.acquire();  // Wait until coroutine needs to be resumed
 
-        log() << "main Resuming coroutine on worker thread\n";
+        log() << "main Resuming coroutine on worker thread" << std::endl;
         if (use_threadpool) {
             threadpool->enqueue_task(resume_logic);
         } else {

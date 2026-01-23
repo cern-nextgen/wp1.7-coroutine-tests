@@ -156,7 +156,7 @@ int main() {
     // Start executing the algorithm without blocking main
     Scope scope;
     auto work = []() -> execution::task<void> {
-        log() << "Starting work\n";
+        log() << "Starting work" << std::endl;
         auto status = co_await algorithm("main");
         log() << "Final status of algorithm " << status << std::endl;
     }();

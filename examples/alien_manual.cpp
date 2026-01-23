@@ -110,19 +110,19 @@ CoroutineTests::alien::manual_algorithm::Algorithm algorithm(
 enum class State { READY, SCHEDULED, /*SUSPENDED,*/ DONE };
 
 int main() {
-    log() << "main Starting\n";
+    log() << "main Starting" << std::endl;
 
     std::atomic<State> state{State::READY};
     // Scheduler that sets READY state when scheduled
     auto scheduler = [&state](std::coroutine_handle<>) {
-        log() << "scheduler Schedule called\n";
+        log() << "scheduler Schedule called" << std::endl;
         state.store(State::READY);
     };
     auto threadpool = CoroutineTests::Threadpool(2);
 
     auto t = algorithm("main");
     t.set_scheduler(scheduler);
-    log() << "main Starting Algorithm\n";
+    log() << "main Starting Algorithm" << std::endl;
     CoroutineTests::alien::manual_algorithm::StatusCode result;
 
     // Main loop resuming execution of algorithm on a threadpool when state is
@@ -130,7 +130,8 @@ int main() {
     // other operations such as transition between coroutines won't change the
     // state
     while (state.load() != State::DONE) {
-        log() << "main Algorithm not DONE yet, waiting for READY state...\n";
+        log() << "main Algorithm not DONE yet, waiting for READY state..."
+              << std::endl;
         while (true) {
             State s = state.load();
             if (s == State::READY || s == State::DONE)
@@ -139,10 +140,10 @@ int main() {
         }
 
         if (state.load() == State::DONE) {
-            log() << "main Detected DONE state, exiting loop\n";
+            log() << "main Detected DONE state, exiting loop" << std::endl;
             break;
         }
-        log() << "main Algorithm ready to resume, enqueuing ...\n";
+        log() << "main Algorithm ready to resume, enqueuing ..." << std::endl;
         state.store(State::SCHEDULED);
         threadpool.enqueue_task([&state, &t, &result]() {
             std::optional<CoroutineTests::alien::manual_algorithm::StatusCode>
