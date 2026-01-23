@@ -9,7 +9,7 @@
 #include <string_view>
 #include <type_traits>
 
-#include "logging_utils.hpp"
+#include "logging_utils.hpp"  // log, format_name
 
 namespace Gaudi {
 /// Very simple StatusCode substitute

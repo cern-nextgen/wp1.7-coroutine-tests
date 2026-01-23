@@ -1,15 +1,14 @@
 #include <chrono>
 #include <coroutine>
 #include <exception>
-#include <iostream>
 #include <string_view>
 
 #include "CoroutineTests/alien/algorithm.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/alien/when_all.hpp"
 #include "CoroutineTests/threadpool.hpp"
-#include "alien_timer.hpp"
-#include "logging_utils.hpp"
+#include "alien_timer.hpp"    // AsyncTimer
+#include "logging_utils.hpp"  // log, format_name
 
 // co_await a AsyncTimer
 CoroutineTests::alien::tool::Tool toolA(std::string_view parent) {

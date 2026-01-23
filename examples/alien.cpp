@@ -8,8 +8,8 @@
 #include "CoroutineTests/alien/subtool.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
-#include "alien_timer.hpp"
-#include "logging_utils.hpp"
+#include "alien_timer.hpp"    // AsyncTimer
+#include "logging_utils.hpp"  // log, format_name
 
 // co_awaits a AsyncTimer
 CoroutineTests::alien::subtool::SubTool subtool(std::string_view parent) {
