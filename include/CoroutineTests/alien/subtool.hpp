@@ -39,13 +39,14 @@ class StatusCode {
     private:
     Status m_status;
 };
-
+namespace concepts {
 template <typename T>
 concept HasScheduler = requires(T t) {
     {
         t.get_scheduler()
     } -> std::convertible_to<std::function<void(std::coroutine_handle<>)>>;
 };
+}  // namespace concepts
 
 // Nestable coroutine, can be co_awaited by other coroutines.
 // Returns a StatusCode value via co_return, doesn't co_yield.
@@ -83,7 +84,7 @@ class [[nodiscard]] Task {
     bool await_ready() const noexcept { return false; }
     // Awaitable interface: setup parent/scheduler relationship and transfer
     // control to this coroutine
-    template <HasScheduler T>
+    template <concepts::HasScheduler T>
     inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
     // Awaitable interface: return result or rethrow exception on resume
     StatusCode await_resume() const;
@@ -136,7 +137,7 @@ struct Task::promise_type {
     void return_value(StatusCode value) { m_value = value; }
 };
 
-template <HasScheduler T>
+template <concepts::HasScheduler T>
 inline Task::handle_type Task::await_suspend(
     std::coroutine_handle<T> handle) noexcept {
     m_coroutine.promise().m_parent = handle;
