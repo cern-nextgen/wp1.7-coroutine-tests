@@ -20,7 +20,7 @@ class StatusCode {
     /// Constructor
     StatusCode(Status status = UNDEFINED) : m_status(status) {}
 
-    /// Get the status of the statuscode
+    /// Get the status of the status code
     Status status() const { return m_status; }
 
     /// Friend function to output the status code
