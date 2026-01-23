@@ -81,7 +81,7 @@ CoroutineTests::alien::tool::Task tool3_execute(std::string_view parent) {
 
 // Task: co_awaits AsyncTimer then tool1_execute then tool2_execute then
 // tool3_execute
-CoroutineTests::alien::algorithm::Task algorithm(std::string_view parent) {
+algorithm::Task algorithm_execute(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Calling async API in algorithm" << std::endl;
@@ -115,7 +115,7 @@ int main() {
         threadpool.enqueue_task(handle);
     };
     log() << "main Launching algorithm..." << std::endl;
-    auto t = algorithm("main");
+    auto t = algorithm_execute("main");
     auto future = t.schedule_on(scheduler);
     log() << "main Waiting for algorithm completion..." << std::endl;
     auto status = future.get();
