@@ -19,7 +19,7 @@ class StatusCode {
     /// Friend function to output the status code
     friend std::ostream& operator<<(std::ostream& os,
                                     const StatusCode& status) {
-        os << "algorithm::StatusCode::";
+        os << "manual_algorithm::StatusCode::";
         switch (status.status()) {
             case StatusCode::SUCCESS:
                 os << "SUCCESS";
