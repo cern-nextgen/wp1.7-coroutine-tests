@@ -2,11 +2,12 @@
 
 #include <chrono>
 #include <cstdlib>
-#include <format>
 #include <iostream>
 #include <string_view>
 #include <thread>
 #include <utility>
+
+#include "logging_utils.hpp"
 
 // Backend selection: stdexec (default) or beman::execution
 
@@ -68,14 +69,6 @@ struct Scope {
 #endif  // USE_BEMAN
     }
 };
-
-std::ostream& log() {
-    return std::cout << std::this_thread::get_id() << "  ";
-}
-
-std::ostream& log(std::string_view self) {
-    return std::cout << std::this_thread::get_id() << "  " << self << "  ";
-}
 
 template <typename Tag>
 class StatusCodeImpl {
@@ -151,7 +144,7 @@ struct AsyncAPIMockup {
         // with given status code
         void start() noexcept {
             std::thread([this]() {
-                const auto self = std::format("   {}.AsyncAPIMockup", parent);
+                const auto self = format_name(parent, "AsyncAPIMockup");
                 log(self) << "Async operation started, will take "
                           << delay.count() << " ms" << std::endl;
                 std::this_thread::sleep_for(delay);
@@ -224,7 +217,7 @@ TaskArenaScheduler get_scheduler(tbb::task_arena& arena) {
 }
 
 execution::task<tools::StatusCode> tool1(std::string_view parent) {
-    const auto self = std::format("   {}.tool1", parent);
+    const auto self = format_name(parent, "tool1");
 
     log(self) << "Calling async API in tool1" << std::endl;
     auto status = co_await AsyncAPIMockup{tools::StatusCode::SUCCESS,
@@ -236,7 +229,7 @@ execution::task<tools::StatusCode> tool1(std::string_view parent) {
 }
 
 execution::task<tools::StatusCode> tool2(std::string_view parent) {
-    const auto self = std::format("   {}.tool2", parent);
+    const auto self = format_name(parent, "tool2");
 
     log(self) << "Calling async API in tool2" << std::endl;
     auto status1 = co_await AsyncAPIMockup{tools::StatusCode::SUCCESS,
@@ -257,13 +250,13 @@ execution::task<tools::StatusCode> tool2(std::string_view parent) {
 }
 
 execution::task<tools::StatusCode> tool3(std::string_view parent) {
-    const auto self = std::format("   {}.tool3", parent);
+    const auto self = format_name(parent, "tool3");
     log(self) << "Finishing tool3" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
 execution::task<algs::StatusCode> algorithm(std::string_view parent) {
-    const auto self = std::format("   {}.algorithm", parent);
+    const auto self = format_name(parent, "algorithm");
 
     log(self) << "Calling async API in algorithm" << std::endl;
     auto status1 = co_await AsyncAPIMockup{algs::StatusCode::SUCCESS,
