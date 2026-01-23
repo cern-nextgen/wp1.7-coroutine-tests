@@ -10,8 +10,10 @@
 #include "alien_timer.hpp"    // AsyncTimer
 #include "logging_utils.hpp"  // log, format_name
 
+using namespace CoroutineTests::alien;
+
 // co_await a AsyncTimer
-CoroutineTests::alien::tool::Task toolA_execute(std::string_view parent) {
+tool::Task<tool::StatusCode> toolA_execute(std::string_view parent) {
     const auto self = format_name(parent, "toolA");
     log(self) << "Starting toolA" << std::endl;
     log(self) << "Calling async API in toolA" << std::endl;
@@ -19,11 +21,11 @@ CoroutineTests::alien::tool::Task toolA_execute(std::string_view parent) {
                                       StatusCode::SUCCESS, self};
     log(self) << "Result from async API in toolA: " << status << std::endl;
     log(self) << "Finishing toolA" << std::endl;
-    co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
+    co_return tool::StatusCode::SUCCESS;
 }
 
 // co_await a AsyncTimer
-CoroutineTests::alien::tool::Task toolB_execute(std::string_view parent) {
+tool::Task<tool::StatusCode> toolB_execute(std::string_view parent) {
     const auto self = format_name(parent, "toolB");
     log(self) << "Starting toolB" << std::endl;
     log(self) << "Calling async API in toolB" << std::endl;
@@ -31,31 +33,30 @@ CoroutineTests::alien::tool::Task toolB_execute(std::string_view parent) {
                                       StatusCode::SUCCESS, self};
     log(self) << "Result from async API in toolB: " << status << std::endl;
     log(self) << "Finishing toolB" << std::endl;
-    co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+    co_return tool::StatusCode::FAILURE;
 }
 
 // co_await toolA and toolB in parallel via when_all
-CoroutineTests::alien::algorithm::Task algorithm_execute(
-    std::string_view parent) {
+algorithm::Task algorithm_execute(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Launching toolA, toolB and AsyncTimer in parallel"
               << std::endl;
     try {
-        auto [codeA, codeB, codeC] = co_await CoroutineTests::alien::when_all(
-            toolA_execute(self), toolB_execute(self),
-            AsyncTimer{std::chrono::milliseconds(20), StatusCode::SUCCESS,
-                       self});
+        auto [codeA, codeB, codeC] =
+            co_await when_all(toolA_execute(self), toolB_execute(self),
+                              AsyncTimer{std::chrono::milliseconds(20),
+                                         StatusCode::SUCCESS, self});
         log(self) << "Result from toolA: " << codeA
                   << ", result from toolB: " << codeB
                   << ", result from AsyncTimer: " << codeC << std::endl;
 
     } catch (const std::exception& e) {
         log(self) << "when_all threw: " << e.what() << std::endl;
-        co_return CoroutineTests::alien::algorithm::StatusCode::FAILURE;
+        co_return algorithm::StatusCode::FAILURE;
     }
     log(self) << "Finishing algorithm" << std::endl;
-    co_return CoroutineTests::alien::algorithm::StatusCode::SUCCESS;
+    co_return algorithm::StatusCode::SUCCESS;
 }
 
 int main() {

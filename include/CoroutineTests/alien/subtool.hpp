@@ -1,6 +1,7 @@
 #ifndef COROUTINETESTS_ALIEN_SUBTOOL_H
 #define COROUTINETESTS_ALIEN_SUBTOOL_H
 
+#include <concepts>
 #include <coroutine>
 #include <exception>
 #include <functional>
@@ -39,6 +40,7 @@ class StatusCode {
     private:
     Status m_status;
 };
+
 namespace concepts {
 template <typename T>
 concept HasScheduler = requires(T t) {
@@ -49,8 +51,16 @@ concept HasScheduler = requires(T t) {
 }  // namespace concepts
 
 // Nestable coroutine, can be co_awaited by other coroutines.
-// Returns a StatusCode value via co_return, doesn't co_yield.
+// Returns a single value of templated type via co_return, doesn't co_yield.
+template <typename ResultType>
 class [[nodiscard]] Task {
+
+    static_assert(
+        std::default_initializable<ResultType>,
+        "Task<ResultType> requires ResultType to be default-initializable");
+    static_assert(std::movable<ResultType>,
+                  "Task<ResultType> requires ResultType to be movable");
+
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
@@ -87,15 +97,16 @@ class [[nodiscard]] Task {
     template <concepts::HasScheduler T>
     inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
     // Awaitable interface: return result or rethrow exception on resume
-    StatusCode await_resume() const;
+    ResultType await_resume() const;
 
     private:
     handle_type m_coroutine = nullptr;
 };
 
-struct Task::promise_type {
+template <typename ResultType>
+struct Task<ResultType>::promise_type {
     // Storage for the co_return result value
-    StatusCode m_value;
+    ResultType m_value;
     // Storage for exceptions thrown in the coroutine body
     std::exception_ptr m_exception;
     // Handle to the parent coroutine that co_awaited this task
@@ -134,22 +145,28 @@ struct Task::promise_type {
     // Required by coroutines: capture exceptions for later rethrowing
     void unhandled_exception() { m_exception = std::current_exception(); }
     // Required by coroutines: store the co_return value
-    void return_value(StatusCode value) { m_value = value; }
+    template <typename T>
+        requires std::assignable_from<ResultType&, T&&>
+    void return_value(T&& value) {
+        m_value = std::forward<T>(value);
+    }
 };
 
+template <typename ResultType>
 template <concepts::HasScheduler T>
-inline Task::handle_type Task::await_suspend(
+inline Task<ResultType>::handle_type Task<ResultType>::await_suspend(
     std::coroutine_handle<T> handle) noexcept {
     m_coroutine.promise().m_parent = handle;
     m_coroutine.promise().m_scheduler = handle.promise().get_scheduler();
     return m_coroutine;
 }
 
-inline StatusCode Task::await_resume() const {
+template <typename ResultType>
+inline ResultType Task<ResultType>::await_resume() const {
     if (m_coroutine.promise().m_exception) {
         std::rethrow_exception(m_coroutine.promise().m_exception);
     }
-    return m_coroutine.promise().m_value;
+    return std::move(m_coroutine.promise().m_value);
 }
 }  // namespace CoroutineTests::alien::subtool
 #endif  // COROUTINETESTS_ALIEN_SUBTOOL_H

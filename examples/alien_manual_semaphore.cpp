@@ -11,41 +11,43 @@
 #include "alien_timer.hpp"    // AsyncTimer // AsyncTimer
 #include "logging_utils.hpp"  // log, format_name
 
+using namespace CoroutineTests::alien;
+
 // co_awaits a AsyncTimer
-CoroutineTests::alien::subtool::Task subtool_execute(std::string_view parent) {
+subtool::Task<subtool::StatusCode> subtool_execute(std::string_view parent) {
     const auto self = format_name(parent, "subtool");
     log(self) << "Calling async API in subtool" << std::endl;
     auto status = co_await AsyncTimer{std::chrono::milliseconds(75),
                                       StatusCode::SUCCESS, self};
     log(self) << "Result from async API in subtool: " << status << std::endl;
     log(self) << "Finishing subtool" << std::endl;
-    co_return CoroutineTests::alien::subtool::StatusCode::SUCCESS;
+    co_return subtool::StatusCode::SUCCESS;
 }
 
 // throws
-CoroutineTests::alien::subtool::Task throwing_subtool_execute(
+subtool::Task<subtool::StatusCode> throwing_subtool_execute(
     std::string_view parent) {
     const auto self = format_name(parent, "throwing_subtool");
     log(self) << "Calling async API in throwing_subtool" << std::endl;
     // simulate immediate failure without async work
     log(self) << "About to throw exception" << std::endl;
     throw std::runtime_error("throwing_subtool simulated failure");
-    co_return CoroutineTests::alien::subtool::StatusCode::FAILURE;
+    co_return subtool::StatusCode::FAILURE;
 }
 
 // co_awaits a AsyncTimer
-CoroutineTests::alien::tool::Task tool1_execute(std::string_view parent) {
+tool::Task<tool::StatusCode> tool1_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool1");
     log(self) << "Calling async API in tool1" << std::endl;
     auto status = co_await AsyncTimer{std::chrono::milliseconds(100),
                                       StatusCode::SUCCESS, self};
     log(self) << "Result from async API in tool1: " << status << std::endl;
     log(self) << "Finishing tool1" << std::endl;
-    co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+    co_return tool::StatusCode::FAILURE;
 }
 
 // co_awaits subtool
-CoroutineTests::alien::tool::Task tool2_execute(std::string_view parent) {
+tool::Task<tool::StatusCode> tool2_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool2");
     log(self) << "Calling async API in tool2" << std::endl;
     auto status1 = co_await AsyncTimer{std::chrono::milliseconds(10),
@@ -59,18 +61,18 @@ CoroutineTests::alien::tool::Task tool2_execute(std::string_view parent) {
                                        StatusCode::FAILURE, self};
     log(self) << "Result from async API in tool2: " << status2 << std::endl;
     log(self) << "Finishing tool2" << std::endl;
-    co_return CoroutineTests::alien::tool::StatusCode::SUCCESS;
+    co_return tool::StatusCode::SUCCESS;
 }
 
 // tool3: co_awaits throwing_subtool, catches expected exception & rethrows
-CoroutineTests::alien::tool::Task tool3_execute(std::string_view parent) {
+tool::Task<tool::StatusCode> tool3_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool3");
     try {
         auto code = co_await throwing_subtool_execute(self);
         log(self) << "throwing_subtool returned (unexpected): " << code
                   << std::endl;
         log(self) << "Finishing tool3" << std::endl;
-        co_return CoroutineTests::alien::tool::StatusCode::FAILURE;
+        co_return tool::StatusCode::FAILURE;
     } catch (const std::runtime_error& e) {
         log(self) << "Caught exception (expected): " << e.what()
                   << "; rethrowing" << std::endl;
@@ -79,8 +81,7 @@ CoroutineTests::alien::tool::Task tool3_execute(std::string_view parent) {
 }
 
 // Task: co_awaits AsyncTimer then tool1 then tool2 then tool3
-CoroutineTests::alien::manual_algorithm::Task algorithm_execute(
-    std::string_view parent) {
+manual_algorithm::Task algorithm_execute(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Calling async API in algorithm" << std::endl;
@@ -102,7 +103,7 @@ CoroutineTests::alien::manual_algorithm::Task algorithm_execute(
                   << std::endl;
     }
     log(self) << "Finishing algorithm" << std::endl;
-    co_return CoroutineTests::alien::manual_algorithm::StatusCode::SUCCESS;
+    co_return manual_algorithm::StatusCode::SUCCESS;
 }
 
 int main(int argc, char** argv) {
@@ -122,7 +123,7 @@ int main(int argc, char** argv) {
     std::binary_semaphore sem(1);
 
     bool done = false;
-    CoroutineTests::alien::manual_algorithm::StatusCode result;
+    manual_algorithm::StatusCode result;
 
     // Scheduler that releases semaphore to signal readiness to resume
     auto scheduler = [&](std::coroutine_handle<>) {
@@ -143,8 +144,7 @@ int main(int argc, char** argv) {
             }
         } catch (const std::exception& e) {
             log() << "Worker caught exception: " << e.what() << "" << std::endl;
-            result =
-                CoroutineTests::alien::manual_algorithm::StatusCode::FAILURE;
+            result = manual_algorithm::StatusCode::FAILURE;
             done = true;
             sem.release();
         }
