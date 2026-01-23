@@ -4,20 +4,12 @@
 #include <coroutine>
 #include <cstdlib>
 #include <exception>
-#include <format>
 #include <iostream>
 #include <memory>
 #include <string_view>
 #include <type_traits>
 
-std::ostream &log(std::string_view self) {
-    return std::cout << self << "  ";
-}
-
-std::ostream &log() {
-    return std::cout;
-    ;
-}
+#include "logging_utils.hpp"
 
 namespace Gaudi {
 /// Very simple StatusCode substitute
@@ -268,7 +260,7 @@ struct CoroutineT<T>::promise {
 }  // namespace Gaudi
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool1(std::string_view parent) {
-    const std::string self = std::format("   {}.tool1", parent);
+    const std::string self = format_name(parent, "tool1");
     log(self) << "Yielding from tool1" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
     log(self) << "Yielding from tool1" << std::endl;
@@ -278,7 +270,7 @@ Gaudi::CoroutineT<Gaudi::StatusCode> tool1(std::string_view parent) {
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool2(std::string_view parent) {
-    const std::string self = std::format("   {}.tool2", parent);
+    const std::string self = format_name(parent, "tool2");
     log(self) << "Yielding from tool2" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
 
@@ -293,13 +285,13 @@ Gaudi::CoroutineT<Gaudi::StatusCode> tool2(std::string_view parent) {
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> tool3(std::string_view parent) {
-    const std::string self = std::format("   {}.tool3", parent);
+    const std::string self = format_name(parent, "tool3");
     log(self) << "Finishing tool3" << std::endl;
     co_return Gaudi::StatusCode::FAILURE;
 }
 
 Gaudi::CoroutineT<Gaudi::StatusCode> algorithm(std::string_view parent) {
-    const std::string self = std::format("   {}.algorithm", parent);
+    const std::string self = format_name(parent, "algorithm");
     log(self) << "Yielding from algorithm" << std::endl;
     co_yield Gaudi::StatusCode::SUCCESS;
 
