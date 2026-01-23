@@ -39,7 +39,8 @@ class StatusCode {
 };
 
 // Top-level coroutine that can be scheduled from outside.
-// Returns a StatusCode value via co_return, doesn't co_yield.
+// Returns a single value of templated type via co_return, doesn't co_yield.
+template <typename ResultType>
 class [[nodiscard]] Task {
     public:
     struct promise_type;  // typedef required by coroutines
@@ -73,9 +74,9 @@ class [[nodiscard]] Task {
     }
 
     // Resume this coroutine or its currently running child coroutine
-    // Returns status code when the task is finished, otherwise an empty
+    // Returns value of ResultType when the task is finished, otherwise an empty
     // optional
-    inline std::optional<StatusCode> resume();
+    inline std::optional<ResultType> resume();
     // Set user provided scheduler for this task and its child coroutines
     // Provided scheduler will be wrapped, so that coroutine calling it will be
     // saved to m_current
@@ -88,12 +89,12 @@ class [[nodiscard]] Task {
     std::coroutine_handle<> m_current = m_coroutine;
 };
 
-struct Task::promise_type {
+template <typename ResultType>
+struct Task<ResultType>::promise_type {
     // Handle to scheduler
     scheduler_type m_scheduler;
     // Storage for the co_return result value
-    std::optional<StatusCode> m_value;
-
+    std::optional<ResultType> m_value;
     // Schedule resumption of this task
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
     // Accessor for scheduler used by child coroutines
@@ -108,17 +109,23 @@ struct Task::promise_type {
     // Required by coroutines: handle exceptions thrown in the coroutine body
     void unhandled_exception() { throw std::current_exception(); }
     // Required by coroutines: handle co_return <value>
-    void return_value(StatusCode value) { m_value = value; }
+    template <typename T>
+        requires std::assignable_from<std::optional<ResultType>&, T&&>
+    void return_value(T&& value) {
+        m_value = std::forward<T>(value);
+    }
 };
 
-std::optional<StatusCode> Task::resume() {
+template <typename ResultType>
+std::optional<ResultType> Task<ResultType>::resume() {
     if (m_current && !m_current.done()) {
         m_current.resume();
     }
     return m_coroutine.promise().m_value;
 }
 
-void Task::set_scheduler(scheduler_type scheduler) {
+template <typename ResultType>
+void Task<ResultType>::set_scheduler(scheduler_type scheduler) {
     if (m_coroutine) {
         m_coroutine.promise().m_scheduler =
             [this, scheduler](std::coroutine_handle<> handle) {

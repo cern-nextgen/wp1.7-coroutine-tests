@@ -1,6 +1,7 @@
 #ifndef COROUTINETESTS_ALIEN_ALGORITHM_H
 #define COROUTINETESTS_ALIEN_ALGORITHM_H
 
+#include <concepts>
 #include <coroutine>
 #include <exception>
 #include <functional>
@@ -41,8 +42,14 @@ class StatusCode {
 };
 
 // Top-level coroutine that can be scheduled from outside.
-// Returns a StatusCode value via co_return, doesn't co_yield.
+// Returns a single value of templated type via co_return, doesn't co_yield.
+template <typename ResultType>
 class [[nodiscard]] Task {
+
+    static_assert(
+        std::default_initializable<ResultType>,
+        "Task<ResultType> requires ResultType to be default-initializable");
+
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
@@ -74,18 +81,19 @@ class [[nodiscard]] Task {
         return *this;
     }
     // Schedule the task to be run on the given scheduler
-    inline std::future<StatusCode> schedule_on(const scheduler_type& scheduler);
+    inline std::future<ResultType> schedule_on(const scheduler_type& scheduler);
 
     private:
     handle_type m_coroutine = nullptr;
     bool m_started = false;
 };
 
-struct Task::promise_type {
+template <typename ResultType>
+struct Task<ResultType>::promise_type {
     // Handle to scheduler
     scheduler_type m_scheduler;
     // Promise to communicate result back to caller
-    std::promise<StatusCode> m_promise;
+    std::promise<ResultType> m_promise;
 
     // Schedule resumption of task
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
@@ -103,10 +111,16 @@ struct Task::promise_type {
         m_promise.set_exception(std::current_exception());
     }
     // Required by coroutines: handle co_return <value>
-    void return_value(StatusCode value) { m_promise.set_value(value); }
+    template <typename T>
+        requires std::assignable_from<ResultType&, T&&>
+    void return_value(T&& value) {
+        m_promise.set_value(std::forward<T>(value));
+    }
 };
 
-std::future<StatusCode> Task::schedule_on(const scheduler_type& scheduler) {
+template <typename ResultType>
+std::future<ResultType> Task<ResultType>::schedule_on(
+    const scheduler_type& scheduler) {
     if (m_coroutine && !m_started) {
         m_coroutine.promise().m_scheduler = scheduler;
         m_coroutine.promise().reschedule();

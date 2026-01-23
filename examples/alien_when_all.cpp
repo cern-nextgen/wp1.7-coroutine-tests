@@ -37,7 +37,8 @@ tool::Task<tool::StatusCode> toolB_execute(std::string_view parent) {
 }
 
 // co_await toolA and toolB in parallel via when_all
-algorithm::Task algorithm_execute(std::string_view parent) {
+algorithm::Task<algorithm::StatusCode> algorithm_execute(
+    std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Launching toolA, toolB and AsyncTimer in parallel"

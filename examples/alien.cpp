@@ -83,7 +83,8 @@ tool::Task<tool::StatusCode> tool3_execute(std::string_view parent) {
 
 // Task: co_awaits AsyncTimer then tool1_execute then tool2_execute then
 // tool3_execute
-algorithm::Task algorithm_execute(std::string_view parent) {
+algorithm::Task<algorithm::StatusCode> algorithm_execute(
+    std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
     log(self) << "Starting algorithm" << std::endl;
     log(self) << "Calling async API in algorithm" << std::endl;
