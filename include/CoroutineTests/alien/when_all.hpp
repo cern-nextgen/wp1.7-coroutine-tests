@@ -16,13 +16,14 @@
 namespace CoroutineTests::alien {
 
 namespace detail {
-
+namespace concepts {
 template <typename T>
 concept HasScheduler = requires(T t) {
     {
         t.get_scheduler()
     } -> std::convertible_to<std::function<void(std::coroutine_handle<>)>>;
 };
+}  // namespace concepts
 
 // get awaiter from an awaitable, try out different ways according to the
 // standard (await_transform not included)
@@ -183,7 +184,7 @@ class WhenAllAwaitable {
 
     // on suspend, store handle to parent and start helper tasks for each
     // awaitable
-    template <HasScheduler T>
+    template <concepts::HasScheduler T>
     void await_suspend(std::coroutine_handle<T> parent) {
         m_parent = parent;
         m_scheduler = parent.promise().get_scheduler();

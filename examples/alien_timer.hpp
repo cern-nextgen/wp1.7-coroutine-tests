@@ -9,17 +9,17 @@
 
 class StatusCode {
     public:
-    /// StatusCode values
+    // StatusCode values
     enum Status { SUCCESS = 0, FAILURE = 1, UNDEFINED = 2 };
-    /// Constructor
+    // Constructor
     StatusCode(Status status = UNDEFINED) : m_status(status) {}
 
-    /// Get the status of the statuscode
+    // Get the status of the status code
     Status status() const { return m_status; }
-    /// Friend function to output the status code
+    // Friend function to output the status code
     friend std::ostream& operator<<(std::ostream& os,
                                     const StatusCode& status) {
-        os << "Algorithm::StatusCode::";
+        os << "Task::StatusCode::";
         switch (status.status()) {
             case StatusCode::SUCCESS:
                 os << "SUCCESS";

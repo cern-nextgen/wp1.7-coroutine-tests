@@ -9,17 +9,17 @@ namespace CoroutineTests::alien::manual_algorithm {
 
 class StatusCode {
     public:
-    /// StatusCode values
+    // StatusCode values
     enum Status { SUCCESS = 0, FAILURE = 1, UNDEFINED = 2 };
-    /// Constructor
+    // Constructor
     StatusCode(Status status = UNDEFINED) : m_status(status) {}
 
-    /// Get the status of the statuscode
+    // Get the status of the status code
     Status status() const { return m_status; }
-    /// Friend function to output the status code
+    // Friend function to output the status code
     friend std::ostream& operator<<(std::ostream& os,
                                     const StatusCode& status) {
-        os << "Algorithm::StatusCode::";
+        os << "manual_algorithm::StatusCode::";
         switch (status.status()) {
             case StatusCode::SUCCESS:
                 os << "SUCCESS";
@@ -39,8 +39,9 @@ class StatusCode {
 };
 
 // Top-level coroutine that can be scheduled from outside.
-// Returns a StatusCode value via co_return, doesn't co_yield.
-class [[nodiscard]] Algorithm {
+// Returns a single value of templated type via co_return, doesn't co_yield.
+template <typename ResultType>
+class [[nodiscard]] Task {
     public:
     struct promise_type;  // typedef required by coroutines
     using handle_type =
@@ -49,19 +50,19 @@ class [[nodiscard]] Algorithm {
     using scheduler_type = std::function<void(std::coroutine_handle<>)>;
 
     // Required by coroutines
-    Algorithm(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
-    ~Algorithm() {
+    Task(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
+    ~Task() {
         if (m_coroutine) {
             m_coroutine.destroy();
         }
     }
-    Algorithm() = default;
-    Algorithm(const Algorithm&) = delete;
-    Algorithm& operator=(const Algorithm&) = delete;
-    Algorithm(Algorithm&& other) noexcept : m_coroutine{other.m_coroutine} {
+    Task() = default;
+    Task(const Task&) = delete;
+    Task& operator=(const Task&) = delete;
+    Task(Task&& other) noexcept : m_coroutine{other.m_coroutine} {
         other.m_coroutine = {};
     }
-    Algorithm& operator=(Algorithm&& other) noexcept {
+    Task& operator=(Task&& other) noexcept {
         if (this != &other) {
             if (m_coroutine) {
                 m_coroutine.destroy();
@@ -72,35 +73,35 @@ class [[nodiscard]] Algorithm {
         return *this;
     }
 
-    // Resume the algorithm coroutine or its currently running child coroutine
-    // Returns status code when the algorithm is finished, otherwise an empty
+    // Resume this coroutine or its currently running child coroutine
+    // Returns value of ResultType when the task is finished, otherwise an empty
     // optional
-    inline std::optional<StatusCode> resume();
-    // Set user provided scheduler for this algorithm and its child coroutines
+    inline std::optional<ResultType> resume();
+    // Set user provided scheduler for this task and its child coroutines
     // Provided scheduler will be wrapped, so that coroutine calling it will be
     // saved to m_current
     inline void set_scheduler(scheduler_type scheduler);
 
     private:
-    // handle to the coroutine associated with the algorithm (owning)
+    // handle to the coroutine associated with this task (owning)
     handle_type m_coroutine = nullptr;
     // handle to the currently running coroutine (non-owning)
     std::coroutine_handle<> m_current = m_coroutine;
 };
 
-struct Algorithm::promise_type {
+template <typename ResultType>
+struct Task<ResultType>::promise_type {
     // Handle to scheduler
     scheduler_type m_scheduler;
     // Storage for the co_return result value
-    std::optional<StatusCode> m_value;
-
-    // Schedule resumption of algorithm
+    std::optional<ResultType> m_value;
+    // Schedule resumption of this task
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
     // Accessor for scheduler used by child coroutines
     const auto& get_scheduler() const { return m_scheduler; }
 
     // Required by coroutines: create the object
-    Algorithm get_return_object() { return {handle_type::from_promise(*this)}; }
+    Task get_return_object() { return {handle_type::from_promise(*this)}; }
     // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const noexcept { return {}; }
     // Required by coroutines: suspend on completion
@@ -108,17 +109,23 @@ struct Algorithm::promise_type {
     // Required by coroutines: handle exceptions thrown in the coroutine body
     void unhandled_exception() { throw std::current_exception(); }
     // Required by coroutines: handle co_return <value>
-    void return_value(StatusCode value) { m_value = value; }
+    template <typename T>
+        requires std::assignable_from<std::optional<ResultType>&, T&&>
+    void return_value(T&& value) {
+        m_value = std::forward<T>(value);
+    }
 };
 
-std::optional<StatusCode> Algorithm::resume() {
+template <typename ResultType>
+std::optional<ResultType> Task<ResultType>::resume() {
     if (m_current && !m_current.done()) {
         m_current.resume();
     }
     return m_coroutine.promise().m_value;
 }
 
-void Algorithm::set_scheduler(scheduler_type scheduler) {
+template <typename ResultType>
+void Task<ResultType>::set_scheduler(scheduler_type scheduler) {
     if (m_coroutine) {
         m_coroutine.promise().m_scheduler =
             [this, scheduler](std::coroutine_handle<> handle) {

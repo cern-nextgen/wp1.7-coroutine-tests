@@ -79,7 +79,7 @@ TaskArenaScheduler get_scheduler(tbb::task_arena& arena) {
     return TaskArenaScheduler{&arena};
 }
 
-execution::task<tools::StatusCode> tool1(std::string_view parent) {
+execution::task<tools::StatusCode> tool1_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool1");
 
     log(self) << "Calling async API in tool1" << std::endl;
@@ -91,7 +91,7 @@ execution::task<tools::StatusCode> tool1(std::string_view parent) {
     co_return tools::StatusCode::FAILURE;
 }
 
-execution::task<tools::StatusCode> tool2(std::string_view parent) {
+execution::task<tools::StatusCode> tool2_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool2");
 
     log(self) << "Calling async API in tool2" << std::endl;
@@ -100,7 +100,7 @@ execution::task<tools::StatusCode> tool2(std::string_view parent) {
     log(self) << "Result from async API in tool2: " << status1 << std::endl;
 
     log(self) << "Launching tool1" << std::endl;
-    auto code = co_await tool1(self);
+    auto code = co_await tool1_execute(self);
     log(self) << "Result from tool1: " << code << std::endl;
 
     log(self) << "Calling async API in tool2" << std::endl;
@@ -112,13 +112,13 @@ execution::task<tools::StatusCode> tool2(std::string_view parent) {
     co_return tools::StatusCode::SUCCESS;
 }
 
-execution::task<tools::StatusCode> tool3(std::string_view parent) {
+execution::task<tools::StatusCode> tool3_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool3");
     log(self) << "Finishing tool3" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
-execution::task<algs::StatusCode> algorithm(std::string_view parent) {
+execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
 
     log(self) << "Calling async API in algorithm" << std::endl;
@@ -127,7 +127,7 @@ execution::task<algs::StatusCode> algorithm(std::string_view parent) {
     log(self) << "Result from async API in algorithm: " << status1 << std::endl;
 
     log(self) << "Launching tool1" << std::endl;
-    auto code1 = co_await tool1(self);
+    auto code1 = co_await tool1_execute(self);
     log(self) << "Result from tool1: " << code1 << std::endl;
 
     log(self) << "Calling async API in algorithm" << std::endl;
@@ -136,11 +136,11 @@ execution::task<algs::StatusCode> algorithm(std::string_view parent) {
     log(self) << "Result from async API in algorithm: " << status2 << std::endl;
 
     log(self) << "Launching tool2" << std::endl;
-    auto code2 = co_await tool2(self);
+    auto code2 = co_await tool2_execute(self);
     log(self) << "Result from tool2: " << code2 << std::endl;
 
     log(self) << "Launching tool3" << std::endl;
-    auto code3 = co_await tool3(self);
+    auto code3 = co_await tool3_execute(self);
     log(self) << "Result from tool3: " << code3 << std::endl;
 
     log(self) << "Finishing algorithm" << std::endl;
@@ -157,7 +157,7 @@ int main() {
     Scope scope;
     auto work = []() -> execution::task<void> {
         log() << "Starting work" << std::endl;
-        auto status = co_await algorithm("main");
+        auto status = co_await algorithm_execute("main");
         log() << "Final status of algorithm " << status << std::endl;
     }();
     scope.spawn(scheduler, std::move(work));

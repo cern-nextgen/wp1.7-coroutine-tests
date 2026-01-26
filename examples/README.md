@@ -80,7 +80,7 @@ This is a variant of the "Exec task" example, but using a custom C++ senders/rec
 
 ## Alien
 
-This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the "Gaudi" example. The "algorithm" coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
+This example demonstrates how multiple coroutine types that know nothing about each other can interoperate in a hierarchy, similar to the ["Gaudi" example](#gaudi). The `algorithm::Task` coroutine can be directly scheduled, while the other coroutine types can only by awaited by their parent coroutine. The hierarchy requires that:
 
 - each coroutine implements `get_scheduler` method to provide access to its scheduler for its child coroutines
 - `co_await` a child coroutine transfers control to the child coroutine
@@ -88,12 +88,12 @@ This example demonstrates how multiple coroutine types that know nothing about e
 
 ## Alien manual
 
-This is an alternative implementation of the "Alien" example, where the "algorithm" coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the "algorithm" coroutine is ready to be resumed and internally inform the "algorithm" coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as in the "Alien" example.
+This is an alternative implementation of the ["Alien" example](#alien), where the `algorithm::Task` coroutine is supposed to be manually resumed from outside instead of automatically continuing once scheduled. The "scheduler" handle passed between coroutines is supposed to notify the caller when the `algorithm::Task` coroutine is ready to be resumed and internally inform the `algorithm::Task` coroutine about next child coroutine to resume. The coroutines in the hierarchy still doesn't know each other types and relay only on the common interface with `get_scheduler` and semantic of `co_await` and `final_suspend` as in the ["Alien" example](#alien).
 
 ## Alien manual semaphore
 
-This example is a alternative of the "Alien manual" example, where instead of a custom scheduler, a binary semaphore is used to notify the caller when the "algorithm" coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
+This example is a alternative of the ["Alien manual" example](#alien-manual), where instead of a custom scheduler, a binary semaphore is used to notify the caller when the `algorithm::Task` coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
 
 ## Alien when all
 
-This example demonstrates a `when_all` algorithm compatible with "alien" coroutine semantics. The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
+This example demonstrates a `when_all` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
