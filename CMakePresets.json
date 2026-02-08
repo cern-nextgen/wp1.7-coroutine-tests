@@ -12,7 +12,8 @@
                 "BUILD_STDEXEC": "ON",
                 "BUILD_TBB": "ON",
                 "BUILD_EXAMPLES": "ON",
-                "BUILD_PERF": "ON"
+                "BUILD_PERF": "ON",
+                "BUILD_CUDA": "OFF"
             }
         },
         {
@@ -24,6 +25,16 @@
             "cacheVariables": {
                 "CMAKE_CXX_STANDARD": "20",
                 "BUILD_BEMAN_TASK": "OFF"
+            }
+        },
+        {
+            "name": "20-cuda",
+            "displayName": "Configure preset constrained to C++20 with CUDA support",
+            "inherits": [
+                "20"
+            ],
+            "cacheVariables": {
+                "BUILD_CUDA": "ON"
             }
         },
         {
@@ -39,7 +50,8 @@
         }
     ],
     "buildPresets": [
-        {   "name": "default",
+        {
+            "name": "default",
             "displayName": "Default Build Preset",
             "hidden": true,
             "configurePreset": "default",
@@ -51,6 +63,14 @@
             "configurePreset": "20",
             "inherits": [
                 "default"
+            ]
+        },
+        {
+            "name": "20-cuda",
+            "displayName": "Build with C++20 and CUDA support",
+            "configurePreset": "20-cuda",
+            "inherits": [
+                "20"
             ]
         },
         {
@@ -73,6 +93,19 @@
                 {
                     "type": "build",
                     "name": "20"
+                }
+            ]
+        },
+        {
+            "name": "20-cuda",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "20-cuda"
+                },
+                {
+                    "type": "build",
+                    "name": "20-cuda"
                 }
             ]
         },

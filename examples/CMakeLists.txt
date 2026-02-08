@@ -55,3 +55,8 @@ if(BUILD_BEMAN_TASK)
     target_compile_definitions(exec_tbb_beman PUBLIC "USE_BEMAN")
   endif()
 endif()
+
+if(BUILD_CUDA AND BUILD_TBB)
+  add_executable(alien_reco alien_reco.cpp)
+  target_link_libraries(alien_reco PRIVATE CoroutineTests CUDA::cudart TBB::tbb)
+endif()
