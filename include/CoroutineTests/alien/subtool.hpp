@@ -6,6 +6,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <optional>
 
 namespace CoroutineTests::alien::subtool {
 
@@ -51,17 +52,17 @@ concept HasScheduler = requires(T t) {
 }  // namespace concepts
 
 // Nestable coroutine, can be co_awaited by other coroutines.
-// Returns a single value of templated type via co_return, doesn't co_yield.
+// Returns a single value of templated type via co_return if it isn't void
+// Doesn't co_yield.
 template <typename ResultType>
 class [[nodiscard]] Task {
 
-    static_assert(
-        std::default_initializable<ResultType>,
-        "Task<ResultType> requires ResultType to be default-initializable");
-    static_assert(std::movable<ResultType>,
-                  "Task<ResultType> requires ResultType to be movable");
+    static_assert(std::movable<ResultType> || std::same_as<ResultType, void>,
+                  "Task<ResultType> requires ResultType to be movable or void");
 
     public:
+    using result_type = ResultType;
+
     struct promise_type;  // typedef required by coroutines
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
@@ -97,16 +98,39 @@ class [[nodiscard]] Task {
     template <concepts::HasScheduler T>
     inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
     // Awaitable interface: return result or rethrow exception on resume
-    ResultType await_resume() const;
+    result_type await_resume() const;
 
     private:
     handle_type m_coroutine = nullptr;
 };
 
+// Helper for handling co_return in promise_type, default implementation for
+// non-void ResultType
 template <typename ResultType>
-struct Task<ResultType>::promise_type {
+struct ReturnHelper {
     // Storage for the co_return result value
-    ResultType m_value;
+    std::optional<ResultType> m_value;
+
+    // Required by coroutines, mutually exclusive with return_void
+    // Store the co_return value
+    template <typename T>
+        requires std::constructible_from<ResultType, T&&>
+    void return_value(T&& value) {
+        m_value.emplace(std::forward<T>(value));
+    }
+};
+
+// Specialization for void return type
+template <>
+struct ReturnHelper<void> {
+    // Required by coroutines, mutually exclusive with return_value
+    // Handle co_return without value
+    void return_void() {}
+};
+
+template <typename ResultType>
+struct Task<ResultType>::promise_type
+    : public ReturnHelper<typename Task<ResultType>::result_type> {
     // Storage for exceptions thrown in the coroutine body
     std::exception_ptr m_exception;
     // Handle to the parent coroutine that co_awaited this task
@@ -144,12 +168,6 @@ struct Task<ResultType>::promise_type {
     }
     // Required by coroutines: capture exceptions for later rethrowing
     void unhandled_exception() { m_exception = std::current_exception(); }
-    // Required by coroutines: store the co_return value
-    template <typename T>
-        requires std::assignable_from<ResultType&, T&&>
-    void return_value(T&& value) {
-        m_value = std::forward<T>(value);
-    }
 };
 
 template <typename ResultType>
@@ -162,11 +180,16 @@ inline Task<ResultType>::handle_type Task<ResultType>::await_suspend(
 }
 
 template <typename ResultType>
-inline ResultType Task<ResultType>::await_resume() const {
+inline typename Task<ResultType>::result_type Task<ResultType>::await_resume()
+    const {
     if (m_coroutine.promise().m_exception) {
         std::rethrow_exception(m_coroutine.promise().m_exception);
     }
-    return std::move(m_coroutine.promise().m_value);
+    if constexpr (std::same_as<result_type, void>) {
+        return;
+    } else {
+        return std::move(m_coroutine.promise().m_value).value();
+    }
 }
 }  // namespace CoroutineTests::alien::subtool
 #endif  // COROUTINETESTS_ALIEN_SUBTOOL_H

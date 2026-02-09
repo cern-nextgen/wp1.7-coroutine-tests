@@ -81,6 +81,22 @@ tool::Task<tool::StatusCode> tool3_execute(std::string_view parent) {
     }
 }
 
+// tool4: co_awaits a AsyncTimer, but return void result
+tool::Task<void> tool4_execute(std::string_view parent) {
+    const auto self = format_name(parent, "tool4");
+    log(self) << "Calling async API in tool4" << std::endl;
+    auto status = co_await AsyncTimer{std::chrono::milliseconds(50),
+                                      StatusCode::SUCCESS, self};
+    log(self) << "Result from async API in tool4: " << status << std::endl;
+    if (status.status() != StatusCode::SUCCESS) {
+        log(self) << "Async operation in tool4 failed, throwing exception"
+                  << std::endl;
+        throw std::runtime_error("tool4_async operation failed");
+    }
+    log(self) << "Finishing tool4" << std::endl;
+    co_return;
+}
+
 // Task: co_awaits AsyncTimer then tool1_execute then tool2_execute then
 // tool3_execute
 algorithm::Task<algorithm::StatusCode> algorithm_execute(
@@ -105,6 +121,9 @@ algorithm::Task<algorithm::StatusCode> algorithm_execute(
         log(self) << "Caught exception  (expected) from tool3: " << e.what()
                   << std::endl;
     }
+    log(self) << "Launching tool4" << std::endl;
+    co_await tool4_execute(self);
+    log(self) << "tool4 done" << std::endl;
     log(self) << "Finishing algorithm" << std::endl;
     co_return algorithm::StatusCode::SUCCESS;
 }
