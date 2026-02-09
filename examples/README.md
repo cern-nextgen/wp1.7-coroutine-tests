@@ -131,3 +131,9 @@ This example is a alternative of the ["Alien manual" example](#alien-manual), wh
 Link: [alien_when_all.cpp](alien_when_all.cpp)
 
 This example demonstrates a `when_all` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The `when_all` algorithm takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
+
+## Alien sync_wait
+
+Link: [alien_sync_wait.cpp](alien_sync_wait.cpp)
+
+This example demonstrates a `sync_wait` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The algorithm takes a scheduler and coroutine, waits until its completion, and return the results or rethrows an exception.
