@@ -98,7 +98,7 @@ class [[nodiscard]] Task {
     template <concepts::HasScheduler T>
     inline handle_type await_suspend(std::coroutine_handle<T> handle) noexcept;
     // Awaitable interface: return result or rethrow exception on resume
-    ResultType await_resume() const;
+    result_type await_resume() const;
 
     private:
     handle_type m_coroutine = nullptr;
@@ -114,7 +114,7 @@ struct ReturnHelper {
     // Required by coroutines, mutually exclusive with return_void
     // Store the co_return value
     template <typename T>
-        requires std::assignable_from<ResultType&, T&&>
+        requires std::constructible_from<ResultType, T&&>
     void return_value(T&& value) {
         m_value.emplace(std::forward<T>(value));
     }
@@ -129,7 +129,8 @@ struct ReturnHelper<void> {
 };
 
 template <typename ResultType>
-struct Task<ResultType>::promise_type : public ReturnHelper<ResultType> {
+struct Task<ResultType>::promise_type
+    : public ReturnHelper<typename Task<ResultType>::result_type> {
     // Storage for exceptions thrown in the coroutine body
     std::exception_ptr m_exception;
     // Handle to the parent coroutine that co_awaited this task
@@ -179,16 +180,16 @@ inline Task<ResultType>::handle_type Task<ResultType>::await_suspend(
 }
 
 template <typename ResultType>
-inline ResultType Task<ResultType>::await_resume() const {
+inline typename Task<ResultType>::result_type Task<ResultType>::await_resume()
+    const {
     if (m_coroutine.promise().m_exception) {
         std::rethrow_exception(m_coroutine.promise().m_exception);
     }
-    if constexpr (std::same_as<ResultType, void>) {
+    if constexpr (std::same_as<result_type, void>) {
         return;
     } else {
         return std::move(m_coroutine.promise().m_value).value();
     }
 }
-
 }  // namespace CoroutineTests::alien::tool
 #endif  // COROUTINETESTS_ALIEN_TOOL_H
