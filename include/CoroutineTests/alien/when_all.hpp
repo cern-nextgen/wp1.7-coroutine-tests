@@ -15,7 +15,7 @@
 
 namespace CoroutineTests::alien {
 
-namespace detail {
+namespace detail::when_all {
 namespace concepts {
 template <typename T>
 concept HasScheduler = requires(T t) {
@@ -223,7 +223,7 @@ class WhenAllAwaitable {
     // the void in results is represented by monostate
     template <std::size_t... I>
     auto take_results(std::index_sequence<I...>) {
-        return std::tuple<detail::stored_result_t<Awaitables>...>{
+        return std::tuple<detail::when_all::stored_result_t<Awaitables>...>{
             std::move(*std::get<I>(m_results))...};
     }
 
@@ -235,9 +235,9 @@ class WhenAllAwaitable {
     // scheduler to resume coroutines
     std::function<void(std::coroutine_handle<>)> m_scheduler;
     // helper tasks awaiting each awaitable
-    std::array<detail::HelperTask, sizeof...(Awaitables)> m_tasks{};
+    std::array<detail::when_all::HelperTask, sizeof...(Awaitables)> m_tasks{};
     // storage for results of each awaitable
-    std::tuple<std::optional<detail::stored_result_t<Awaitables>>...>
+    std::tuple<std::optional<detail::when_all::stored_result_t<Awaitables>>...>
         m_results{};
     // counter for remaining unfinished awaitables
     std::atomic_size_t m_remaining{0};
@@ -252,7 +252,7 @@ class WhenAllAwaitable {
 // factory function to create WhenAllAwaitable
 template <typename... Awaitables>
 auto when_all(Awaitables&&... awaitables) {
-    return detail::WhenAllAwaitable<Awaitables...>(
+    return detail::when_all::WhenAllAwaitable<Awaitables...>(
         std::forward<Awaitables>(awaitables)...);
 }
 
