@@ -30,6 +30,8 @@ add_executable(alien_manual_semaphore alien_manual_semaphore.cpp)
 target_link_libraries(alien_manual_semaphore PRIVATE CoroutineTests)
 add_executable(alien_when_all alien_when_all.cpp)
 target_link_libraries(alien_when_all PRIVATE CoroutineTests)
+add_executable(alien_sync_wait alien_sync_wait.cpp)
+target_link_libraries(alien_sync_wait PRIVATE CoroutineTests)
 
 
 if(BUILD_STDEXEC)
