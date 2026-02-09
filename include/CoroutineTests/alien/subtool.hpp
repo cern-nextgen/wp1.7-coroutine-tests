@@ -6,6 +6,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <optional>
 
 namespace CoroutineTests::alien::subtool {
 
@@ -56,10 +57,6 @@ concept HasScheduler = requires(T t) {
 template <typename ResultType>
 class [[nodiscard]] Task {
 
-    static_assert(std::default_initializable<ResultType> ||
-                      std::same_as<ResultType, void>,
-                  "Task<ResultType> requires ResultType to be "
-                  "default-initializable or void");
     static_assert(std::movable<ResultType> || std::same_as<ResultType, void>,
                   "Task<ResultType> requires ResultType to be movable or void");
 
@@ -112,14 +109,14 @@ class [[nodiscard]] Task {
 template <typename ResultType>
 struct ReturnHelper {
     // Storage for the co_return result value
-    ResultType m_value;
+    std::optional<ResultType> m_value;
 
     // Required by coroutines, mutually exclusive with return_void
     // Store the co_return value
     template <typename T>
         requires std::assignable_from<ResultType&, T&&>
     void return_value(T&& value) {
-        m_value = std::forward<T>(value);
+        m_value.emplace(std::forward<T>(value));
     }
 };
 
@@ -189,7 +186,7 @@ inline ResultType Task<ResultType>::await_resume() const {
     if constexpr (std::same_as<ResultType, void>) {
         return;
     } else {
-        return std::move(m_coroutine.promise().m_value);
+        return std::move(m_coroutine.promise().m_value).value();
     }
 }
 
