@@ -126,8 +126,8 @@ Link: [alien_manual_semaphore.cpp](alien_manual_semaphore.cpp)
 
 This example is a alternative of the ["Alien manual" example](#alien-manual), where instead of a custom scheduler, a binary semaphore is used to notify the caller when the `algorithm::Task` coroutine is ready to be resumed. The example be default run in a single-threaded mode, but can also be run in multi-threaded mode with `--mt` in which case the resumption will be enqueued into a thread-pool.
 
-## Alien when all
+## Alien when_all
 
 Link: [alien_when_all.cpp](alien_when_all.cpp)
 
-This example demonstrates a `when_all` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The `when_all` coroutine takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
+This example demonstrates a `when_all` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The `when_all` algorithm takes multiple awaitables, awaits them all concurrently, and returns a tuple of their results once all are completed. This implementation returns results in a tuple, where `void` results are represented by `std::monostate`. In case of exceptions thrown by nested awaitables, the first encountered exception is stored, the others tasks continue to completion, and then the exception is rethrown.
