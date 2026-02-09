@@ -247,7 +247,7 @@ class WhenAllAwaitable {
     std::exception_ptr m_exception{};
 };
 
-}  // namespace detail
+}  // namespace detail::when_all
 
 // factory function to create WhenAllAwaitable
 template <typename... Awaitables>
