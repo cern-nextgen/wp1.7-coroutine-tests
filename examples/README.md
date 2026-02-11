@@ -137,3 +137,9 @@ This example demonstrates a `when_all` algorithm compatible with coroutine seman
 Link: [alien_sync_wait.cpp](alien_sync_wait.cpp)
 
 This example demonstrates a `sync_wait` algorithm compatible with coroutine semantics as in ["Alien" example](#alien). The algorithm takes a scheduler and coroutine, waits until its completion, and return the results or rethrows an exception.
+
+## Alien counting_scope
+
+Link: [alien_counting_scope.cpp](alien_counting_scope.cpp)
+
+This example demonstrates dynamic work submitting with `counting_scope` compatible with coroutine semantic as in ["Alien" example](#alien). `spawn` schedules execution of a coroutine that returns `void`. `join()` blocks the current thread until all submitted coroutines are finished (and rethrows the first exception captured from submitted work, if any).
