@@ -149,7 +149,7 @@ struct Task<ResultType>::promise_type
     // Required by coroutines: handle completion and resume parent
     auto final_suspend() const noexcept {
         struct final_awaiter {
-            // Don't skip final supersession
+            // Don't skip final supression
             bool await_ready() const noexcept { return false; }
             // Resume parent coroutine with symmetric transfer or return to
             // caller
