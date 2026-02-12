@@ -1,3 +1,5 @@
+#pragma once
+
 #include <coroutine>
 
 // This file contains the skeletons for coroutine return type/interface,

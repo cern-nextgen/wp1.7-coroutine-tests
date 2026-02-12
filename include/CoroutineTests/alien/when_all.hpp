@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_WHEN_ALL_H
-#define COROUTINETESTS_ALIEN_WHEN_ALL_H
+#pragma once
 
 #include <array>
 #include <atomic>
@@ -122,7 +121,7 @@ class [[nodiscard]] HelperTask {
         // Required by coroutines: handle completion and resume parent if needed
         auto final_suspend() const noexcept {
             struct final_awaiter {
-                // Don't skip final supersession
+                // Don't skip final supression
                 bool await_ready() const noexcept { return false; }
                 // On suspend, indicate completion and resume parent if this was
                 // the last child
@@ -257,4 +256,3 @@ auto when_all(Awaitables&&... awaitables) {
 }
 
 }  // namespace CoroutineTests::alien
-#endif  // COROUTINETESTS_ALIEN_WHEN_ALL_H

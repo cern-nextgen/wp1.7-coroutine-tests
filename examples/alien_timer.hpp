@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_EXAMPLES_ALIEN_TIMER_HPP
-#define COROUTINETESTS_EXAMPLES_ALIEN_TIMER_HPP
+#pragma once
 
 #include <chrono>
 #include <coroutine>
@@ -58,5 +57,3 @@ struct AsyncTimer {
     }
     StatusCode await_resume() const noexcept { return status_code; }
 };
-
-#endif  // COROUTINETESTS_EXAMPLES_ALIEN_TIMER_HPP

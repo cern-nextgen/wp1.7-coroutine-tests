@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_COUNTING_SCOPE_H
-#define COROUTINETESTS_ALIEN_COUNTING_SCOPE_H
+#pragma once
 
 #include <atomic>
 #include <condition_variable>
@@ -219,5 +218,3 @@ class counting_scope {
 };
 
 }  // namespace CoroutineTests::alien
-
-#endif  // COROUTINETESTS_ALIEN_COUNTING_SCOPE_H

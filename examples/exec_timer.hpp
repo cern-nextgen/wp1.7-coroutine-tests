@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_EXAMPLES_EXEC_TIMER_HPP
-#define COROUTINETESTS_EXAMPLES_EXEC_TIMER_HPP
+#pragma once
 
 #include "exec_backend.hpp"   // std exec backend selection
 #include "logging_utils.hpp"  // log, format_name
@@ -50,5 +49,3 @@ struct TimerSender {
                                    std::move(delay), parent};
     }
 };
-
-#endif  // COROUTINETESTS_EXAMPLES_EXEC_TIMER_HPP

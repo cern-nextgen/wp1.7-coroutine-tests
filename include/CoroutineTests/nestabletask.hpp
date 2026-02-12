@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_NESTABLETASK_H
-#define COROUTINETESTS_NESTABLETASK_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -108,4 +107,3 @@ inline auto NestableTask::await_suspend(handle_type handle) noexcept {
 }
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_NESTABLETASK_H

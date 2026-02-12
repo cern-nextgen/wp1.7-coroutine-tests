@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_SIMPLEGENERATOR_H
-#define COROUTINETESTS_SIMPLEGENERATOR_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -82,4 +81,3 @@ struct SimpleGenerator<T>::promise_type {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_SIMPLEGENERATOR_H

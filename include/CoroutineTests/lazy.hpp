@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_LAZY_H
-#define COROUTINETESTS_LAZY_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -91,4 +90,3 @@ template <typename T>
 using Eager = detail::MaybeLazy<T, false>;
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_LAZY_H

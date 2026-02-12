@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ASYNC_H
-#define COROUTINETESTS_ASYNC_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -115,4 +114,3 @@ void Async::schedule_on(Threadpool& threadpool) {
     m_started = true;
 }
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_ASYNC_H

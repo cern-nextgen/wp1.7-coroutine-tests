@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_PINGPONG_H
-#define COROUTINETESTS_PINGPONG_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -80,4 +79,3 @@ struct Play {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_PINGPONG_H
