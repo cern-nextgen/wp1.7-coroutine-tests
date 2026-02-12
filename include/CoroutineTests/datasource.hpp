@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_DATASOURCE_H
-#define COROUTINETESTS_DATASOURCE_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -100,4 +99,3 @@ struct OutputAwaiter {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_DATASOURCE_H

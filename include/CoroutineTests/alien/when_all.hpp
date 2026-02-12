@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_WHEN_ALL_H
-#define COROUTINETESTS_ALIEN_WHEN_ALL_H
+#pragma once
 
 #include <array>
 #include <atomic>
@@ -257,4 +256,3 @@ auto when_all(Awaitables&&... awaitables) {
 }
 
 }  // namespace CoroutineTests::alien
-#endif  // COROUTINETESTS_ALIEN_WHEN_ALL_H

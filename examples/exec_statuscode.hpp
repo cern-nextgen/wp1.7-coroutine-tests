@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_EXAMPLES_EXEC_STATUSCODE_HPP
-#define COROUTINETESTS_EXAMPLES_EXEC_STATUSCODE_HPP
+#pragma once
 #include <iostream>
 
 template <typename Tag>
@@ -32,5 +31,3 @@ std::ostream& operator<<(std::ostream& os, const StatusCodeImpl<Tag>& sc) {
     }
     return os;
 }
-
-#endif  // COROUTINETESTS_EXAMPLES_EXEC_STATUSCODE_HPP

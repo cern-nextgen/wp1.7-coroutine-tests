@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_SYNC_WAIT_H
-#define COROUTINETESTS_ALIEN_SYNC_WAIT_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -186,5 +185,3 @@ auto sync_wait(std::function<void(std::coroutine_handle<>)> scheduler,
 }
 
 }  // namespace CoroutineTests::alien
-
-#endif  // COROUTINETESTS_ALIEN_SYNC_WAIT_H

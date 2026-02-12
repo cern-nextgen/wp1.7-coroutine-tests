@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_SUBTOOL_H
-#define COROUTINETESTS_ALIEN_SUBTOOL_H
+#pragma once
 
 #include <concepts>
 #include <coroutine>
@@ -192,4 +191,3 @@ inline typename Task<ResultType>::result_type Task<ResultType>::await_resume()
     }
 }
 }  // namespace CoroutineTests::alien::subtool
-#endif  // COROUTINETESTS_ALIEN_SUBTOOL_H

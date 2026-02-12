@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_GENERATOR_H
-#define COROUTINETESTS_GENERATOR_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -124,4 +123,3 @@ class Generator<T>::Iter {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_GENERATOR_H

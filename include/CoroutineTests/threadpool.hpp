@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_THREADPOOL_H
-#define COROUTINETESTS_THREADPOOL_H
+#pragma once
 
 #include <condition_variable>
 #include <functional>
@@ -58,4 +57,3 @@ class Threadpool {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_THREADPOOL_H

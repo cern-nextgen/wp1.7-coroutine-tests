@@ -1,5 +1,4 @@
-#ifndef CORUOUTINETESTS_EXAMPLES_EXEC_BACKEND_HPP
-#define CORUOUTINETESTS_EXAMPLES_EXEC_BACKEND_HPP
+#pragma once
 
 // Backend selection: stdexec (default) or beman::execution
 
@@ -62,5 +61,3 @@ struct Scope {
 #endif  // USE_BEMAN
     }
 };
-
-#endif  // CORUOUTINETESTS_EXAMPLES_EXEC_BACKEND_HPP

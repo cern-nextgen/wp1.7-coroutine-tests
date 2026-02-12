@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_TASK_H
-#define COROUTINETESTS_TASK_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -73,4 +72,3 @@ inline void Task::resume() const {
 }
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_TASK_H

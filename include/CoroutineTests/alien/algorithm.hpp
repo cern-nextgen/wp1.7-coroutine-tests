@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_ALGORITHM_H
-#define COROUTINETESTS_ALIEN_ALGORITHM_H
+#pragma once
 
 #include <concepts>
 #include <coroutine>
@@ -131,4 +130,3 @@ std::future<ResultType> Task<ResultType>::schedule_on(
 }
 
 }  // namespace CoroutineTests::alien::algorithm
-#endif  // COROUTINETESTS_ALIEN_ALGORITHM_H

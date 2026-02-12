@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_DATASINK_H
-#define COROUTINETESTS_DATASINK_H
+#pragma once
 
 #include <coroutine>
 #include <exception>
@@ -92,4 +91,3 @@ struct InputAwaiter {
 };
 
 }  // namespace CoroutineTests
-#endif  // COROUTINETESTS_DATASINK_H

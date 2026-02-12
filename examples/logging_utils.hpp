@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_EXAMPLES_LOGGING_UTILS_HPP
-#define COROUTINETESTS_EXAMPLES_LOGGING_UTILS_HPP
+#pragma once
 
 #include <format>
 #include <iostream>
@@ -18,5 +17,3 @@ static inline std::string format_name(std::string_view parent,
                                       std::string_view self) {
     return std::format("   {}.{}", parent, self);
 }
-
-#endif  // COROUTINETESTS_EXAMPLES_LOGGING_UTILS_HPP

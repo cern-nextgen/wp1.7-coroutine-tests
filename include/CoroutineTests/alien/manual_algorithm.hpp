@@ -1,5 +1,4 @@
-#ifndef COROUTINETESTS_ALIEN_MANUAL_ALGORITHM_H
-#define COROUTINETESTS_ALIEN_MANUAL_ALGORITHM_H
+#pragma once
 
 #include <coroutine>
 #include <functional>
@@ -135,4 +134,3 @@ void Task<ResultType>::set_scheduler(scheduler_type scheduler) {
     }
 }
 }  // namespace CoroutineTests::alien::manual_algorithm
-#endif  // COROUTINETESTS_ALIEN_MANUAL_ALGORITHM_H
