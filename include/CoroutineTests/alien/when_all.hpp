@@ -121,7 +121,7 @@ class [[nodiscard]] HelperTask {
         // Required by coroutines: handle completion and resume parent if needed
         auto final_suspend() const noexcept {
             struct final_awaiter {
-                // Don't skip final supression
+                // Don't skip final suspension
                 bool await_ready() const noexcept { return false; }
                 // On suspend, indicate completion and resume parent if this was
                 // the last child
