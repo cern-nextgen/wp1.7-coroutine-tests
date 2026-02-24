@@ -4,7 +4,7 @@ These are some (largely) independent tests with
 [coroutines](https://en.cppreference.com/w/cpp/language/coroutines)
 for the task scheduling studies in Work Package 1.7.
 
-This project isn't intended as a coroutine support library.  If you're looking for a fully-fledged coroutine library, consider using [cppcoro](https://github.com/lewissbaker/cppcoro) or [concurrencpp](https://github.com/David-Haim/concurrencpp). For composing asynchronous operations across libraries, consider using [std::execution](https://en.cppreference.com/w/cpp/experimental/execution.html) (senders/receivers) (reference implementations [Nvidia/stdexec](https://github.com/NVIDIA/stdexec), [bemanproject/execution](https://github.com/bemanproject/execution)).
+This project isn't intended as a coroutine support library.  If you're looking for a fully-fledged coroutine library, consider using [cppcoro](https://github.com/lewissbaker/cppcoro), [libcoro](https://github.com/jbaldwin/libcoro) or  [concurrencpp](https://github.com/David-Haim/concurrencpp). For composing asynchronous operations across libraries, consider using [std::execution](https://en.cppreference.com/w/cpp/experimental/execution.html) (senders/receivers) (reference implementations [Nvidia/stdexec](https://github.com/NVIDIA/stdexec), [bemanproject/execution](https://github.com/bemanproject/execution)).
 
 ## Getting started
 
