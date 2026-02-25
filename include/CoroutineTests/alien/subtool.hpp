@@ -117,6 +117,8 @@ struct ReturnHelper {
     void return_value(T&& value) {
         m_value.emplace(std::forward<T>(value));
     }
+    // Overload to resolve ambiguity
+    void return_value(ResultType value) { m_value.emplace(std::move(value)); }
 };
 
 // Specialization for void return type

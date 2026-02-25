@@ -115,6 +115,10 @@ struct Task<ResultType>::promise_type {
     void return_value(T&& value) {
         m_promise.set_value(std::forward<T>(value));
     }
+    // Overload to resolve ambiguity
+    void return_value(ResultType value) {
+        m_promise.set_value(std::move(value));
+    }
 };
 
 template <typename ResultType>
