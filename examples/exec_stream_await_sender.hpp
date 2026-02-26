@@ -6,6 +6,7 @@
 #include <stdexec/execution.hpp>
 /// Wrapper sender suspending execution until all operations on a CUDA
 /// stream are complete.
+
 class stream_await_sender {
     public:
     // associated operation state
