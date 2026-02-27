@@ -8,7 +8,7 @@ class StatusCodeImpl {
     inline static const StatusCodeImpl SUCCESS{Status::SUCCESS};
     inline static const StatusCodeImpl FAILURE{Status::FAILURE};
     StatusCodeImpl(Status status = Status::UNDEFINED) : m_status(status) {}
-    StatusCodeImpl(const StatusCodeImpl&) = default;
+
     Status status() const { return m_status; }
 
     private:

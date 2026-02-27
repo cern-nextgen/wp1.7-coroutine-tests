@@ -143,3 +143,9 @@ This example demonstrates a `sync_wait` algorithm compatible with coroutine sema
 Link: [alien_counting_scope.cpp](alien_counting_scope.cpp)
 
 This example demonstrates dynamic work submitting with `counting_scope` compatible with coroutine semantic as in ["Alien" example](#alien). `spawn` schedules execution of a coroutine that returns `void`. `join()` blocks the current thread until all submitted coroutines are finished (and rethrows the first exception captured from submitted work, if any).
+
+## Reconstruction
+
+Link: [alien_reco.cpp](alien_reco.cpp) and [exec_reco.cpp](exec_reco.cpp)
+
+These examples show a setup and coroutine chain loosely inspired by track reconstruction on GPU in high energy physics experiments. The `reconstruct` coroutine prepares a mockup input data on a CUDA device, then `co_await`s the `clustering` coroutine, then receives output from it and `co_await`s the `seeding` coroutine. Both `clustering` and `seeding` coroutines receive a device buffer, copy it asynchronously back to host, suspend until the copy is done, then count non-zero elements and allocate new buffer of that size for their results. In `main` the `reconstruct` coroutines are executed in a TBB task arena either synchronously waiting for the result from the submitting or dynamically starting a few `reconstruct` coroutines and waiting until all the work is finished. In the `alien_reco` the application is implemented with "alien" coroutines (as in [alien examples](#alien)) , while in `exec_reco_stdexec` the application is implemented with C++26 execution.

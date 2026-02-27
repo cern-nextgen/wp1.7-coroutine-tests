@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(CoroutineTests)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "")
+set(CMAKE_CXX_EXTENSIONS FALSE CACHE BOOL "Disable C++ extensions" )
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(CMAKE_CXX_STANDARD LESS 20)
   message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}. Must be at least C++20.")
@@ -79,6 +80,13 @@ if(BUILD_TBB)
   else()
     add_subdirectory(extern/tbb)
   endif()
+endif()
+
+### CUDA options
+
+option(BUILD_CUDA "Build with CUDA support" OFF)
+if(BUILD_CUDA)
+  find_package(CUDAToolkit REQUIRED)
 endif()
 
 ## targets
