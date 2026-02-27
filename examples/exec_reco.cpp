@@ -189,7 +189,7 @@ int main() {
         auto payload = [](std::vector<cudaStream_t> streams,
                           std::vector<tools::StatusCode>& statuses,
                           int i) -> exec::task<void> {
-            const auto name = std::format("main(event{})", i);
+            const auto name = std::format("event{}:", i);
             auto& stream = streams.at(i);
             auto& status = statuses.at(i);
             status = co_await reconstruct(stream, name);
