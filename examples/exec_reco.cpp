@@ -7,10 +7,10 @@
 #include <iostream>
 #include <stdexec/execution.hpp>
 
-#include "exec_statuscode.hpp"            // StatusCodeImpl
 #include "exec_stream_await_sender.hpp"   // stream_await_sender
 #include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
 #include "logging_utils.hpp"              // log, format_name
+#include "statuscode.hpp"                 // StatusCodeImpl
 
 namespace tools {
 struct Tag {
