@@ -56,6 +56,17 @@ if(BUILD_BEMAN_TASK)
   endif()
 endif()
 
+
+if(BUILD_CAPY)
+  add_executable(capy_task capy_task.cpp)
+  target_link_libraries(capy_task PRIVATE CoroutineTests Boost::capy)
+ # if (BUILD_TBB)
+ #   add_executable(exec_tbb_capy exec_tbb.cpp)
+ #   target_link_libraries(exec_tbb_capy PRIVATE CoroutineTests capy::capy TBB::tbb)
+ #   target_compile_definitions(exec_tbb_capy PUBLIC "USE_CAPY")
+ # endif()
+endif()
+
 if(BUILD_CUDA AND BUILD_TBB)
   add_executable(alien_reco alien_reco.cpp)
   target_link_libraries(alien_reco PRIVATE CoroutineTests CUDA::cudart TBB::tbb)
