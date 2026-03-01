@@ -102,7 +102,7 @@ This example shows usage of `task` coroutine return type from future C++26 stand
 
 Link: [exec_tbb.cpp](exec_tbb.cpp)
 
-This is a variant of the "Exec task" example, but using a custom C++ senders/receivers scheduler to execute task coroutines on Intel TBB task arena.
+This is a variant of the ["Exec task" example](#exec-task), but using a custom C++ senders/receivers scheduler to execute task coroutines on Intel TBB task arena.
 
 ## Alien
 
@@ -143,6 +143,18 @@ This example demonstrates a `sync_wait` algorithm compatible with coroutine sema
 Link: [alien_counting_scope.cpp](alien_counting_scope.cpp)
 
 This example demonstrates dynamic work submitting with `counting_scope` compatible with coroutine semantic as in ["Alien" example](#alien). `spawn` schedules execution of a coroutine that returns `void`. `join()` blocks the current thread until all submitted coroutines are finished (and rethrows the first exception captured from submitted work, if any).
+
+## Capy task
+
+Link: [capy_task.cpp](capy_task.cpp)
+
+This is a variant of ["Exec task" example](#exec-task) using Boost.Capy and IoAwaitables protocol instead of C++26 execution.
+
+## Capy TBB
+
+Link: [capy_tbb.cpp](capy_tbb.cpp)
+
+This is a variant of ["Exec tbb" example](#exec-tbb) using Boost.Capy and IoAwaitables protocol instead of C++26 execution. This example shows implementation and usage of custom executor scheduling tasks on TBB task arena.
 
 ## Reconstruction
 
