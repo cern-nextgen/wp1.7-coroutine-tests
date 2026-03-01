@@ -99,7 +99,7 @@ boost::capy::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 int main() {
     log() << "main Starting" << std::endl;
 
-    tbb::task_arena arena{2};
+    auto arena = tbb::task_arena(2);
     auto context = TaskArenaContext(arena);
     auto executor = TaskArenaExecutor(context);
 
@@ -108,8 +108,10 @@ int main() {
     auto final_result = algs::StatusCode{};
     auto result_handler = [&condition, &mutex,
                            &final_result](algs::StatusCode code) {
-        final_result = code;
-        std::lock_guard lock(mutex);
+        {
+            std::lock_guard lock(mutex);
+            final_result = code;
+        }
         condition.notify_one();
     };
 
@@ -117,8 +119,10 @@ int main() {
 
     {
         log() << "main waiting for algorithm to finish..." << std::endl;
-        std::unique_lock lock(mutex);
-        condition.wait(lock);
+        auto lock = std::unique_lock(mutex);
+        condition.wait(lock, [&final_result]() {
+            return final_result != algs::StatusCode::UNDEFINED;
+        });
     }
 
     log() << "Final status of algorithm " << final_result << std::endl;

@@ -148,13 +148,13 @@ This example demonstrates dynamic work submitting with `counting_scope` compatib
 
 Link: [capy_task.cpp](capy_task.cpp)
 
-This is a variant of ["Exec task" example](#exec-task) using Boost.Capy and IoAwaitables protocol instead of C++26 execution.
+This is a variant of ["Exec task" example](#exec-task) using Boost.Capy and IoAwaitables protocol ([p4003](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2026/p4003r0.pdf)) instead of C++26 execution.
 
 ## Capy TBB
 
 Link: [capy_tbb.cpp](capy_tbb.cpp)
 
-This is a variant of ["Exec tbb" example](#exec-tbb) using Boost.Capy and IoAwaitables protocol instead of C++26 execution. This example shows implementation and usage of custom executor scheduling tasks on TBB task arena.
+This is a variant of ["Exec tbb" example](#exec-tbb) using Boost.Capy and IoAwaitables protocol ([p4003](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2026/p4003r0.pdf)) instead of C++26 execution. This example shows implementation and usage of custom executor scheduling tasks on TBB task arena.
 
 ## Reconstruction
 
