@@ -1,16 +1,18 @@
 #include <tbb/task_arena.h>
 
+#include <boost/capy.hpp>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
+#include <mutex>
 #include <string_view>
 #include <thread>
 #include <utility>
 
-#include "exec_backend.hpp"               // std exec backend selection
-#include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler/// TaskArenaSchduler
-#include "exec_timer.hpp"                 // TimerSender
-#include "logging_utils.hpp"              // log, format_name
-#include "statuscode.hpp"                 // StatusCodeImpl
+#include "capy_task_arena_executor.hpp"  // TaskArenaExecutor
+#include "capy_timer.hpp"                // TimerIoAwaitable
+#include "logging_utils.hpp"             // log, format_name
+#include "statuscode.hpp"                // StatusCodeImpl
 
 namespace tools {
 struct Tag {
@@ -26,24 +28,24 @@ struct Tag {
 using StatusCode = StatusCodeImpl<Tag>;
 }  // namespace algs
 
-execution::task<tools::StatusCode> tool1_execute(std::string_view parent) {
+boost::capy::task<tools::StatusCode> tool1_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool1");
 
     log(self) << "Calling async API in tool1" << std::endl;
-    auto status = co_await TimerSender{tools::StatusCode::SUCCESS,
-                                       std::chrono::milliseconds(100), self};
+    auto status = co_await TimerIoAwaitable{std::chrono::milliseconds(100),
+                                            timer::StatusCode::SUCCESS, self};
     log(self) << "Result from async API in tool1: " << status << std::endl;
 
     log(self) << "Finishing tool1" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
-execution::task<tools::StatusCode> tool2_execute(std::string_view parent) {
+boost::capy::task<tools::StatusCode> tool2_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool2");
 
     log(self) << "Calling async API in tool2" << std::endl;
-    auto status1 = co_await TimerSender{tools::StatusCode::SUCCESS,
-                                        std::chrono::milliseconds(10), self};
+    auto status1 = co_await TimerIoAwaitable{std::chrono::milliseconds(10),
+                                             timer::StatusCode::SUCCESS, self};
     log(self) << "Result from async API in tool2: " << status1 << std::endl;
 
     log(self) << "Launching tool1" << std::endl;
@@ -51,26 +53,26 @@ execution::task<tools::StatusCode> tool2_execute(std::string_view parent) {
     log(self) << "Result from tool1: " << code << std::endl;
 
     log(self) << "Calling async API in tool2" << std::endl;
-    auto status2 = co_await TimerSender{tools::StatusCode::FAILURE,
-                                        std::chrono::milliseconds(10), self};
+    auto status2 = co_await TimerIoAwaitable{std::chrono::milliseconds(10),
+                                             timer::StatusCode::FAILURE, self};
     log(self) << "Result from async API in tool2: " << status2 << std::endl;
 
     log(self) << "Finishing tool2" << std::endl;
     co_return tools::StatusCode::SUCCESS;
 }
 
-execution::task<tools::StatusCode> tool3_execute(std::string_view parent) {
+boost::capy::task<tools::StatusCode> tool3_execute(std::string_view parent) {
     const auto self = format_name(parent, "tool3");
     log(self) << "Finishing tool3" << std::endl;
     co_return tools::StatusCode::FAILURE;
 }
 
-execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
+boost::capy::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
     const auto self = format_name(parent, "algorithm");
 
     log(self) << "Calling async API in algorithm" << std::endl;
-    auto status1 = co_await TimerSender{algs::StatusCode::SUCCESS,
-                                        std::chrono::milliseconds(42), self};
+    auto status1 = co_await TimerIoAwaitable{std::chrono::milliseconds(42),
+                                             timer::StatusCode::SUCCESS, self};
     log(self) << "Result from async API in algorithm: " << status1 << std::endl;
 
     log(self) << "Launching tool1" << std::endl;
@@ -78,8 +80,8 @@ execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
     log(self) << "Result from tool1: " << code1 << std::endl;
 
     log(self) << "Calling async API in algorithm" << std::endl;
-    auto status2 = co_await TimerSender{algs::StatusCode::FAILURE,
-                                        std::chrono::milliseconds(17), self};
+    auto status2 = co_await TimerIoAwaitable{std::chrono::milliseconds(17),
+                                             timer::StatusCode::FAILURE, self};
     log(self) << "Result from async API in algorithm: " << status2 << std::endl;
 
     log(self) << "Launching tool2" << std::endl;
@@ -97,23 +99,34 @@ execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 int main() {
     log() << "main Starting" << std::endl;
 
-    tbb::task_arena arena{2};
-    execution::scheduler auto scheduler = get_scheduler(arena);
+    auto arena = tbb::task_arena(2);
+    auto context = TaskArenaContext(arena);
+    auto executor = TaskArenaExecutor(context);
 
-    // Start executing the algorithm without blocking main
-    Scope scope;
-    auto work = []() -> execution::task<void> {
-        log() << "Starting work" << std::endl;
-        auto status = co_await algorithm_execute("main");
-        log() << "Final status of algorithm " << status << std::endl;
-    }();
-    scope.spawn(scheduler, std::move(work));
+    auto condition = std::condition_variable();
+    auto mutex = std::mutex();
+    auto final_result = algs::StatusCode{};
+    auto result_handler = [&condition, &mutex,
+                           &final_result](algs::StatusCode code) {
+        {
+            std::lock_guard lock(mutex);
+            final_result = code;
+        }
+        condition.notify_one();
+    };
 
-    // Sleep a bit to show that algorithm is already running
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    log() << "main waiting for algorithm to finish..." << std::endl;
+    boost::capy::run_async(executor, result_handler)(algorithm_execute("main"));
+
+    {
+        log() << "main waiting for algorithm to finish..." << std::endl;
+        auto lock = std::unique_lock(mutex);
+        condition.wait(lock, [&final_result]() {
+            return final_result != algs::StatusCode::UNDEFINED;
+        });
+    }
+
+    log() << "Final status of algorithm " << final_result << std::endl;
     // Block until all work items in the scope are done
-    execution::sync_wait(scope.join());
     log() << "main Done" << std::endl;
     return EXIT_SUCCESS;
 }

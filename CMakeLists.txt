@@ -82,6 +82,28 @@ if(BUILD_TBB)
   endif()
 endif()
 
+### capy options
+
+option(BUILD_CAPY "Build the capy sources included in CoroutineTests" TRUE)
+
+if (USE_SYSTEM_LIBS)
+  set(USE_SYSTEM_CAPY_DEFAULT ON)
+else()
+  set(USE_SYSTEM_CAPY_DEFAULT OFF)
+endif()
+option(USE_SYSTEM_CAPY
+  "Pick up an existing installation of capy from the build environment"
+  ${USE_SYSTEM_CAPY_DEFAULT})
+unset(USE_SYSTEM_CAPY_DEFAULT)
+
+if(BUILD_CAPY)
+  if(USE_SYSTEM_CAPY)
+    find_package(capy REQUIRED)
+  else()
+    add_subdirectory(extern/capy)
+  endif()
+endif()
+
 ### CUDA options
 
 option(BUILD_CUDA "Build with CUDA support" OFF)

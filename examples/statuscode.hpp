@@ -7,8 +7,12 @@ class StatusCodeImpl {
     enum class Status { SUCCESS = 0, FAILURE = 1, UNDEFINED = 2 };
     inline static const StatusCodeImpl SUCCESS{Status::SUCCESS};
     inline static const StatusCodeImpl FAILURE{Status::FAILURE};
+    inline static const StatusCodeImpl UNDEFINED{Status::UNDEFINED};
     StatusCodeImpl(Status status = Status::UNDEFINED) : m_status(status) {}
 
+    bool operator==(const StatusCodeImpl& other) const {
+        return m_status == other.m_status;
+    }
     Status status() const { return m_status; }
 
     private:
