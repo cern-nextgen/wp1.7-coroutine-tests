@@ -64,6 +64,7 @@ struct TaskArenaScheduler {
 static_assert(execution::scheduler<TaskArenaScheduler>,
               "TaskArenaScheduler should model scheduler");
 
-TaskArenaScheduler get_scheduler(tbb::task_arena& arena, bool log = true) {
+inline TaskArenaScheduler get_scheduler(tbb::task_arena& arena,
+                                        bool log = true) {
     return TaskArenaScheduler{&arena, log};
 }
