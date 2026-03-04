@@ -1,3 +1,5 @@
+#pragma once
+
 #include <tbb/task_arena.h>
 
 #include <boost/capy.hpp>
