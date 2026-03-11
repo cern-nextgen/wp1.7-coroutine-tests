@@ -158,7 +158,7 @@ int main() {
 
     log() << "main Starting" << std::endl;
 
-    tbb::task_arena task_arena{2};
+    tbb::task_arena task_arena{2, 0};
     execution::scheduler auto scheduler = get_scheduler(task_arena, false);
 
     {

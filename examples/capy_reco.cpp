@@ -159,7 +159,7 @@ int main() {
 
     log() << "main Starting" << std::endl;
 
-    auto task_arena = tbb::task_arena{2};
+    auto task_arena = tbb::task_arena{2, 0};
     auto context = TaskArenaContext(task_arena);
     auto executor = TaskArenaExecutor(context);
 

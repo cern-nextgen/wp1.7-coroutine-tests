@@ -182,7 +182,7 @@ int main() {
 
     log() << "main Starting" << std::endl;
 
-    tbb::task_arena task_arena{2};
+    tbb::task_arena task_arena{2, 0};
 
     auto scheduler = [&task_arena](std::coroutine_handle<> handle) {
         task_arena.enqueue([handle]() { handle.resume(); });
