@@ -100,12 +100,12 @@ exec::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
 
     log(self) << "Found " << nSeeds << " seeds" << std::endl;
 
-    // Allocate clusters of appropiate size on device
+    // Allocate seeds of appropiate size on device
     int* d_seeds = nullptr;
     ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_seeds),
                                      nSeeds * sizeof(int), stream));
 
-    // Write some dummy data to the clusters buffer to simulate work
+    // Write some dummy data to the seeds buffer to simulate work
     ERROR_CHECK_CUDA(cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
     ERROR_CHECK_CUDA(
         cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
@@ -158,7 +158,7 @@ int main() {
 
     log() << "main Starting" << std::endl;
 
-    tbb::task_arena task_arena{2};
+    tbb::task_arena task_arena{2, 0};
     execution::scheduler auto scheduler = get_scheduler(task_arena, false);
 
     {
