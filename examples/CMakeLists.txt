@@ -34,7 +34,8 @@ add_executable(alien_sync_wait alien_sync_wait.cpp)
 target_link_libraries(alien_sync_wait PRIVATE CoroutineTests)
 add_executable(alien_counting_scope alien_counting_scope.cpp)
 target_link_libraries(alien_counting_scope PRIVATE CoroutineTests)
-
+add_executable(alien_schedule_on alien_schedule_on.cpp)
+target_link_libraries(alien_schedule_on PRIVATE CoroutineTests)
 
 if(BUILD_STDEXEC)
   add_executable(exec_task_stdexec exec_task.cpp)
