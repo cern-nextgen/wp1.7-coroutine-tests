@@ -3,10 +3,9 @@
 
 #include <boost/capy.hpp>
 #include <boost/capy/ex/thread_pool.hpp>
-#include <condition_variable>
 #include <cstddef>
 #include <iostream>
-#include <mutex>
+#include <latch>
 #include <string_view>
 #include <utility>
 
@@ -206,27 +205,17 @@ int main() {
         std::cout << "--- Single event, synchronous wait for completion ---\n";
         cudaStream_t stream;
         ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
-        auto condition = std::condition_variable();
-        auto mutex = std::mutex();
         auto final_result = tools::StatusCode{};
-        auto result_handler = [&condition, &mutex,
-                               &final_result](tools::StatusCode code) {
-            {
-                std::lock_guard lock(mutex);
-                final_result = code;
-            }
-            condition.notify_one();
+        auto done = std::latch{1};
+        auto result_handler = [&done, &final_result](tools::StatusCode code) {
+            final_result = code;
+            done.count_down();
         };
 
         log() << "main Launching algorithm..." << std::endl;
         boost::capy::run_async(executor, result_handler)(
             reconstruct(stream, delegation_thread, "main"));
-        {
-            auto lock = std::unique_lock(mutex);
-            condition.wait(lock, [&final_result]() {
-                return final_result != tools::StatusCode::UNDEFINED;
-            });
-        }
+        done.wait();
         log() << "main Final status of algorithm " << final_result << ""
               << std::endl;
         ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
@@ -241,31 +230,18 @@ int main() {
             ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         }
 
-        auto condition = std::condition_variable();
-        auto mutex = std::mutex();
-        auto counter = streams.size();
+        auto done = std::latch{static_cast<std::ptrdiff_t>(streams.size())};
         log() << "main Launching algorithms..." << std::endl;
 
         for (std::size_t i = 0; i < streams.size(); ++i) {
-            auto result_handler = [&condition, &mutex, &status, &counter,
-                                   i](tools::StatusCode code) {
-                auto done = false;
-                {
-                    std::lock_guard lock(mutex);
-                    status.at(i) = code;
-                    done = (--counter == 0);
-                }
-                if (done) {
-                    condition.notify_one();
-                }
+            auto result_handler = [&done, &status, i](tools::StatusCode code) {
+                status.at(i) = code;
+                done.count_down();
             };
             boost::capy::run_async(executor, result_handler)(reconstruct(
                 streams.at(i), delegation_thread, "event" + std::to_string(i)));
         }
-        {
-            auto lock = std::unique_lock(mutex);
-            condition.wait(lock, [&counter]() { return counter == 0; });
-        }
+        done.wait();
         for (auto& stream : streams) {
             ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
         }
