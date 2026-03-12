@@ -1,9 +1,8 @@
 #include <boost/capy.hpp>
 #include <chrono>
-#include <condition_variable>
 #include <coroutine>
 #include <cstdlib>
-#include <mutex>
+#include <latch>
 #include <string_view>
 
 #include "capy_timer.hpp"     // TimerIoAwaitable
@@ -133,29 +132,19 @@ int main() {
     auto pool_executor = pool.get_executor();
     auto verbose_executor = VerboseExecutor(pool_executor);
 
-    auto condition = std::condition_variable();
-    auto mutex = std::mutex();
     auto final_result = algs::StatusCode{};
-    auto result_handler = [&condition, &mutex,
-                           &final_result](algs::StatusCode code) {
-        {
-            std::lock_guard lock(mutex);
-            final_result = code;
-        }
-        condition.notify_one();
+    auto done = std::latch{1};
+    auto result_handler = [&done, &final_result](algs::StatusCode code) {
+        final_result = code;
+        done.count_down();
     };
 
     log() << "main launching algorithm" << std::endl;
     boost::capy::run_async(verbose_executor,
                            result_handler)(algorithm_execute("main"));
 
-    {
-        log() << "main waiting for algorithm to finish..." << std::endl;
-        auto lock = std::unique_lock(mutex);
-        condition.wait(lock, [&final_result]() {
-            return final_result != algs::StatusCode::UNDEFINED;
-        });
-    }
+    log() << "main waiting for algorithm to finish..." << std::endl;
+    done.wait();
     log() << "Final status of algorithm " << final_result << std::endl;
 
     log() << "main Done" << std::endl;
