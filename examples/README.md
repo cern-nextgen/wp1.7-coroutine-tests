@@ -144,6 +144,12 @@ Link: [alien_counting_scope.cpp](alien_counting_scope.cpp)
 
 This example demonstrates dynamic work submitting with `counting_scope` compatible with coroutine semantic as in ["Alien" example](#alien). `spawn` schedules execution of a coroutine that returns `void`. `join()` blocks the current thread until all submitted coroutines are finished (and rethrows the first exception captured from submitted work, if any).
 
+## Alien schedule_on
+
+Link: [alien_schedule_on.cpp](alien_schedule_on.cpp)
+
+This example demonstrates changing scheduler used by part of a chain of coroutines following the semantics from ["Alien" example](#alien). The `schedule_on` algorithm can be used to adapt a coroutine to use a different scheduler than its parent. Starting the coroutine suspends its parent and reschedule work on the new scheduler, finishing the coroutine reschedules continuation of its parent using parent's scheduler.
+
 ## Capy task
 
 Link: [capy_task.cpp](capy_task.cpp)
