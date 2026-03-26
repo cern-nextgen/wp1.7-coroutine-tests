@@ -18,7 +18,7 @@ class [[nodiscard]] Generator
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    Generator(handle_type coroutine_handle)
+    explicit Generator(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~Generator() {
         if (m_coroutine) {
@@ -61,8 +61,8 @@ struct Generator<T>::promise_type {
     T m_current_value;
     std::exception_ptr m_exception;
     // required by coroutines
-    Generator<T> get_return_object() {
-        return {Generator<T>::handle_type::from_promise(*this)};
+    Generator get_return_object() {
+        return Generator{Generator<T>::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

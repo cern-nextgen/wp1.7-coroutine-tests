@@ -14,7 +14,7 @@ class [[nodiscard]] DataSink {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    DataSink(handle_type coroutine_handle)
+    explicit DataSink(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~DataSink() {
         if (m_coroutine) {
@@ -61,7 +61,7 @@ struct DataSink<T>::promise_type {
 
     // required by coroutines
     DataSink get_return_object() {
-        return {DataSink::handle_type::from_promise(*this)};
+        return DataSink{DataSink::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     // resume immediately and proceed to first co_await

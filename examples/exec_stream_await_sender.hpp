@@ -17,7 +17,8 @@ class stream_await_sender {
     using completion_signatures =
         stdexec::completion_signatures<stdexec::set_value_t(cudaError_t)>;
 
-    stream_await_sender(const cudaStream_t stream) : m_stream(stream) {}
+    explicit stream_await_sender(const cudaStream_t stream)
+        : m_stream(stream) {}
     stdexec::env<> get_env() const noexcept { return {}; }
 
     template <stdexec::receiver Receiver>

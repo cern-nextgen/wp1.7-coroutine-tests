@@ -14,7 +14,7 @@ class [[nodiscard]] NestableTask {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    NestableTask(handle_type coroutine_handle)
+    explicit NestableTask(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~NestableTask() {
         if (m_coroutine) {
@@ -62,7 +62,7 @@ struct NestableTask::promise_type {
     handle_type m_parent;
     // required by coroutines
     NestableTask get_return_object() {
-        return {NestableTask::handle_type::from_promise(*this)};
+        return NestableTask{NestableTask::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

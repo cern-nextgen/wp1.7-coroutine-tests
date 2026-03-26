@@ -17,7 +17,7 @@ class [[nodiscard]] MaybeLazy {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    MaybeLazy(handle_type coroutine_handle)
+    explicit MaybeLazy(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~MaybeLazy() {
         if (m_coroutine) {
@@ -61,8 +61,8 @@ struct MaybeLazy<T, is_lazy>::promise_type {
     T m_current_value;
     std::exception_ptr m_exception;
     // required by coroutines
-    MaybeLazy<T, is_lazy> get_return_object() {
-        return {MaybeLazy<T, is_lazy>::handle_type::from_promise(*this)};
+    MaybeLazy get_return_object() {
+        return MaybeLazy{MaybeLazy::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     auto initial_suspend() const {

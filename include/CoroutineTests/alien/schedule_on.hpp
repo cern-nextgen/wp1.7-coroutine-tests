@@ -34,7 +34,8 @@ class [[nodiscard]] Task {
         std::coroutine_handle<promise_type>;  // not required but useful
 
     // Constructor from coroutine handle
-    Task(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
+    explicit Task(handle_type coroutine_handle)
+        : m_coroutine(coroutine_handle) {}
     ~Task() {
         if (m_coroutine) {
             m_coroutine.destroy();
@@ -122,7 +123,7 @@ struct Task<ResultType>::promise_type
     void reschedule() { m_scheduler(handle_type::from_promise(*this)); }
 
     // Required by coroutines: create the object
-    Task get_return_object() { return {handle_type::from_promise(*this)}; }
+    Task get_return_object() { return Task{handle_type::from_promise(*this)}; }
     // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const { return {}; }
     // Required by coroutines: handle completion and resume parent

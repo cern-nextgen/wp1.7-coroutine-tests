@@ -49,7 +49,8 @@ class [[nodiscard]] Task {
     using scheduler_type = std::function<void(std::coroutine_handle<>)>;
 
     // Required by coroutines
-    Task(handle_type coroutine_handle) : m_coroutine(coroutine_handle) {}
+    explicit Task(handle_type coroutine_handle)
+        : m_coroutine(coroutine_handle) {}
     ~Task() {
         if (m_coroutine) {
             m_coroutine.destroy();
@@ -100,7 +101,7 @@ struct Task<ResultType>::promise_type {
     const auto& get_scheduler() const { return m_scheduler; }
 
     // Required by coroutines: create the object
-    Task get_return_object() { return {handle_type::from_promise(*this)}; }
+    Task get_return_object() { return Task{handle_type::from_promise(*this)}; }
     // Required by coroutines: suspend immediately on start (lazy execution)
     std::suspend_always initial_suspend() const noexcept { return {}; }
     // Required by coroutines: suspend on completion
