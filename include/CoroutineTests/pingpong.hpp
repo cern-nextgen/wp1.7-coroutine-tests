@@ -11,7 +11,7 @@ class [[nodiscard]] Player {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    Player(handle_type coroutine_handle)
+    explicit Player(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~Player() {
         if (m_coroutine) {
@@ -54,7 +54,7 @@ struct Player::promise_type {
     handle_type m_peer;
     // required by coroutines
     Player get_return_object() {
-        return {Player::handle_type::from_promise(*this)};
+        return Player{Player::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

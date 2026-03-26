@@ -15,7 +15,7 @@ class [[nodiscard]] Async {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    Async(handle_type coroutine_handle)
+    explicit Async(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~Async() {
         if (m_coroutine) {
@@ -71,7 +71,7 @@ struct Async::promise_type {
     }
     // required by coroutines
     Async get_return_object() {
-        return {Async::handle_type::from_promise(*this)};
+        return Async{Async::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

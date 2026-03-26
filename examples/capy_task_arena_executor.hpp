@@ -7,7 +7,7 @@
 
 class TaskArenaContext : public boost::capy::execution_context {
     public:
-    TaskArenaContext(tbb::task_arena& arena) : m_arena(&arena) {}
+    explicit TaskArenaContext(tbb::task_arena& arena) : m_arena(&arena) {}
 
     void schedule(std::coroutine_handle<> h) const {
         m_arena->enqueue([h]() { h.resume(); });
@@ -23,7 +23,7 @@ class TaskArenaContext : public boost::capy::execution_context {
 class TaskArenaExecutor {
 
     public:
-    TaskArenaExecutor(TaskArenaContext& context) noexcept
+    explicit TaskArenaExecutor(TaskArenaContext& context) noexcept
         : m_context(&context) {
         static_assert(boost::capy::Executor<TaskArenaExecutor>,
                       "TaskArenaExecutor should be a valid capy Executor");

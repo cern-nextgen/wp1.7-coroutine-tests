@@ -17,7 +17,7 @@ class [[nodiscard]] DataSource {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    DataSource(handle_type coroutine_handle)
+    explicit DataSource(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~DataSource() {
         if (m_coroutine) {
@@ -68,7 +68,7 @@ struct DataSource<T>::promise_type {
 
     // required by coroutines
     DataSource get_return_object() {
-        return {DataSource::handle_type::from_promise(*this)};
+        return DataSource{DataSource::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }
@@ -85,7 +85,7 @@ struct DataSource<T>::promise_type {
 // This could be potentially replaced by just co_yield
 template <typename T>
 struct OutputAwaiter {
-    OutputAwaiter(T value) : m_value(value) {}
+    explicit OutputAwaiter(T value) : m_value(value) {}
     T m_value;
     // don't resume immediately
     bool await_ready() const { return false; }

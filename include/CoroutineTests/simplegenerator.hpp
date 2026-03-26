@@ -14,7 +14,7 @@ class [[nodiscard]] SimpleGenerator {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    SimpleGenerator(handle_type coroutine_handle)
+    explicit SimpleGenerator(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~SimpleGenerator() {
         if (m_coroutine) {
@@ -64,7 +64,8 @@ struct SimpleGenerator<T>::promise_type {
     T m_value{};
     // required by coroutines
     SimpleGenerator get_return_object() {
-        return {SimpleGenerator::handle_type::from_promise(*this)};
+        return SimpleGenerator{
+            SimpleGenerator::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

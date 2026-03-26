@@ -6,7 +6,7 @@
 
 class StreamIoAwaitable {
     public:
-    StreamIoAwaitable(cudaStream_t stream) : m_stream(stream) {}
+    explicit StreamIoAwaitable(cudaStream_t stream) : m_stream(stream) {}
 
     bool await_ready() const noexcept { return false; }
 

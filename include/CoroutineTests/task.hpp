@@ -13,7 +13,7 @@ class [[nodiscard]] Task {
     using handle_type =
         std::coroutine_handle<promise_type>;  // not required but useful
 
-    Task(handle_type coroutine_handle)
+    explicit Task(handle_type coroutine_handle)
         : m_coroutine(coroutine_handle) {}  // required by coroutines
     ~Task() {
         if (m_coroutine) {
@@ -50,7 +50,7 @@ struct Task::promise_type {
     std::exception_ptr m_exception;
     // required by coroutines
     Task get_return_object() {
-        return {Task::handle_type::from_promise(*this)};
+        return Task{Task::handle_type::from_promise(*this)};
     }
     // called on coroutine start
     std::suspend_always initial_suspend() const { return {}; }

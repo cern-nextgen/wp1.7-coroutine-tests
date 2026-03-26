@@ -27,7 +27,7 @@ template <boost::capy::Executor Ex>
 class VerboseExecutor {
 
     public:
-    VerboseExecutor(Ex& ex) : m_executor(&ex) {
+    explicit VerboseExecutor(Ex& ex) : m_executor(&ex) {
         static_assert(boost::capy::Executor<VerboseExecutor<Ex>>,
                       "VerboseExecutor should be a valid capy Executor");
     }
