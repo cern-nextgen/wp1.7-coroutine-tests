@@ -38,7 +38,7 @@ struct DeviceBuffer {
 };
 
 template <typename F>
-boost::capy::task<void> coro_wrapper(F&& f) {
+boost::capy::task<void> delegate(F&& f) {
     std::forward<F>(f)();
     co_return;
 }
@@ -55,8 +55,7 @@ boost::capy::task<DeviceBuffer<int>> clusterization(
     // Copy cells back to host to count non-zero entries
     auto h_cells = std::vector<int>(nCells);
 
-    co_await boost::capy::run(
-        delegation_thread.get_executor())(coro_wrapper([&]() {
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
         log(self) << "Delegated copy of cells from device to host" << std::endl;
         ERROR_CHECK_CUDA(cudaMemcpyAsync(h_cells.data(), cells.ptr,
                                          nCells * sizeof(int),
@@ -72,11 +71,10 @@ boost::capy::task<DeviceBuffer<int>> clusterization(
 
     log(self) << "Found " << nClusters << " clusters" << std::endl;
 
-    // Allocate clusters of appropiate size on device
+    // Allocate clusters of appropriate size on device
     int* d_clusters = nullptr;
 
-    co_await boost::capy::run(
-        delegation_thread.get_executor())(coro_wrapper([&]() {
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
         log(self) << "Delegated allocation of clusters on device" << std::endl;
         ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_clusters),
                                          nClusters * sizeof(int), stream));
@@ -104,13 +102,12 @@ boost::capy::task<DeviceBuffer<int>> seeding(
     // Copy clusters to host to count non-zero entries
     auto h_clusters = std::vector<int>(nClusters);
 
-    co_await boost::capy::run(delegation_thread.get_executor())(
-        coro_wrapper([&]() {
-            log(self) << "Delegated copy of clusters to host" << std::endl;
-            ERROR_CHECK_CUDA(cudaMemcpyAsync(h_clusters.data(), clusters.ptr,
-                                             nClusters * sizeof(int),
-                                             cudaMemcpyDeviceToHost, stream));
-        }));
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
+        log(self) << "Delegated copy of clusters to host" << std::endl;
+        ERROR_CHECK_CUDA(cudaMemcpyAsync(h_clusters.data(), clusters.ptr,
+                                         nClusters * sizeof(int),
+                                         cudaMemcpyDeviceToHost, stream));
+    }));
 
     ERROR_CHECK_CUDA(co_await StreamIoAwaitable{stream});
 
@@ -121,21 +118,20 @@ boost::capy::task<DeviceBuffer<int>> seeding(
 
     log(self) << "Found " << nSeeds << " seeds" << std::endl;
 
-    // Allocate seeds of appropiate size on device
+    // Allocate seeds of appropriate size on device
     int* d_seeds = nullptr;
 
-    co_await boost::capy::run(delegation_thread.get_executor())(
-        coro_wrapper([&]() {
-            log(self) << "Delegated allocation of seeds on device" << std::endl;
-            ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_seeds),
-                                             nSeeds * sizeof(int), stream));
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
+        log(self) << "Delegated allocation of seeds on device" << std::endl;
+        ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_seeds),
+                                         nSeeds * sizeof(int), stream));
 
-            // Write some dummy data to the seeds buffer to simulate work
-            ERROR_CHECK_CUDA(
-                cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
-            ERROR_CHECK_CUDA(
-                cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
-        }));
+        // Write some dummy data to the seeds buffer to simulate work
+        ERROR_CHECK_CUDA(
+            cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
+        ERROR_CHECK_CUDA(
+            cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
+    }));
 
     co_return DeviceBuffer<int>{d_seeds, static_cast<std::size_t>(nSeeds)};
 }
@@ -148,8 +144,7 @@ boost::capy::task<tools::StatusCode> reconstruct(
 
     // Allocate some dummy input data on the device
     auto cells = DeviceBuffer<int>{nullptr, 1000};
-    co_await boost::capy::run(
-        delegation_thread.get_executor())(coro_wrapper([&]() {
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
         log(self) << "Delegated allocation of input data on device"
                   << std::endl;
         ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&cells.ptr),
@@ -164,13 +159,12 @@ boost::capy::task<tools::StatusCode> reconstruct(
     auto seeds = co_await seeding(clusters, stream, delegation_thread, self);
 
     // Cleanup
-    co_await boost::capy::run(delegation_thread.get_executor())(
-        coro_wrapper([&]() {
-            log(self) << "Delegated cleanup of device memory" << std::endl;
-            ERROR_CHECK_CUDA(cudaFreeAsync(cells.ptr, stream));
-            ERROR_CHECK_CUDA(cudaFreeAsync(clusters.ptr, stream));
-            ERROR_CHECK_CUDA(cudaFreeAsync(seeds.ptr, stream));
-        }));
+    co_await boost::capy::run(delegation_thread.get_executor())(delegate([&]() {
+        log(self) << "Delegated cleanup of device memory" << std::endl;
+        ERROR_CHECK_CUDA(cudaFreeAsync(cells.ptr, stream));
+        ERROR_CHECK_CUDA(cudaFreeAsync(clusters.ptr, stream));
+        ERROR_CHECK_CUDA(cudaFreeAsync(seeds.ptr, stream));
+    }));
 
     ERROR_CHECK_CUDA(co_await StreamIoAwaitable{stream});
 

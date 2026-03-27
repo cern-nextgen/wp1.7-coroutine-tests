@@ -60,7 +60,7 @@ exec::task<DeviceBuffer<int>> clusterization(DeviceBuffer<int> cells,
 
     log(self) << "Found " << nClusters << " clusters" << std::endl;
 
-    // Allocate clusters of appropiate size on device
+    // Allocate clusters of appropriate size on device
     int* d_clusters = nullptr;
     ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_clusters),
                                      nClusters * sizeof(int), stream));
@@ -100,7 +100,7 @@ exec::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
 
     log(self) << "Found " << nSeeds << " seeds" << std::endl;
 
-    // Allocate seeds of appropiate size on device
+    // Allocate seeds of appropriate size on device
     int* d_seeds = nullptr;
     ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_seeds),
                                      nSeeds * sizeof(int), stream));

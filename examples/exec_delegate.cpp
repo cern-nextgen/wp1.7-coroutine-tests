@@ -67,7 +67,7 @@ exec::task<DeviceBuffer<int>> clusterization(
 
     log(self) << "Found " << nClusters << " clusters" << std::endl;
 
-    // Allocate clusters of appropiate size on device
+    // Allocate clusters of appropriate size on device
     int* d_clusters = nullptr;
 
     stdexec::sender auto allocate_clusters =
@@ -123,7 +123,7 @@ exec::task<DeviceBuffer<int>> seeding(
 
     log(self) << "Found " << nSeeds << " seeds" << std::endl;
 
-    // Allocate seeds of appropiate size on device
+    // Allocate seeds of appropriate size on device
     int* d_seeds = nullptr;
 
     stdexec::sender auto allocate_seeds =
