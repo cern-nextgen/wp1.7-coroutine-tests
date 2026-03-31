@@ -1,7 +1,7 @@
 #include <format>
 #include <string_view>
 
-#include "CoroutineTests/alien/get_scheduler.hpp"
+#include "CoroutineTests/alien/this_task.hpp"
 #include "CoroutineTests/alien/schedule_on.hpp"
 #include "CoroutineTests/alien/sync_wait.hpp"
 #include "CoroutineTests/alien/tool.hpp"
@@ -9,6 +9,7 @@
 #include "logging_utils.hpp"
 
 using namespace CoroutineTests::alien;
+
 using scheduler_t = std::function<void(std::coroutine_handle<>)>;
 tool::Task<void> innermost_task(std::string_view parent) {
     const auto self = format_name(parent, "innermost_task");
@@ -31,7 +32,7 @@ tool::Task<void> outer_task(scheduler_t inner_scheduler,
                             std::string_view parent) {
     const auto self = format_name(parent, "outer_task");
     log(self) << "Running outer task" << std::endl;
-    auto current_scheduler = co_await GetScheduler{};
+    auto current_scheduler = co_await this_task::scheduler;
     log(self) << "Got current scheduler in outer task, scheduling inner task "
                  "on inner scheduler"
               << std::endl;

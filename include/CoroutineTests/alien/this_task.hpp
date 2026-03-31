@@ -1,7 +1,9 @@
 #include <coroutine>
 #include <functional>
 
-namespace CoroutineTests::alien {
+namespace CoroutineTests::alien::this_task {
+
+namespace detail {
 
 class GetScheduler {
     public:
@@ -24,4 +26,14 @@ class GetScheduler {
     std::function<void(std::coroutine_handle<>)> m_scheduler;
 };
 
-}  // namespace CoroutineTests::alien
+}  // namespace detail
+
+struct scheduler_tag {};
+
+constexpr scheduler_tag scheduler;
+
+// Custom operator to produce a helper awaitable which will be actually awaited.
+inline auto operator co_await(scheduler_tag) noexcept {
+    return detail::GetScheduler{};
+}
+}  // namespace CoroutineTests::alien::this_task
