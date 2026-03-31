@@ -150,6 +150,12 @@ Link: [alien_schedule_on.cpp](alien_schedule_on.cpp)
 
 This example demonstrates changing scheduler used by part of a chain of coroutines following the semantics from ["Alien" example](#alien). The `schedule_on` algorithm can be used to adapt a coroutine to use a different scheduler than its parent. Starting the coroutine suspends its parent and reschedule work on the new scheduler, finishing the coroutine reschedules continuation of its parent using parent's scheduler.
 
+## Alien get_scheduler
+
+Link: [alien_get_scheduler.cpp](alien_get_scheduler.cpp)
+
+This example shows how the contents of promise type can be extracted from within a coroutine. The `GetScheduler` awaitable when co_awaited accessed the promise type and returns the currently used coroutine. The example uses then `schedule_on` algorithm from ["alien schedule_on" example](#alien-schedule_on) to alternate between used schedulers in each nested coroutine.
+
 ## Capy task
 
 Link: [capy_task.cpp](capy_task.cpp)
