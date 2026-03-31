@@ -50,14 +50,15 @@ struct Retry {
     void await_resume() const noexcept {}
 };
 
-tool::Task<void> poll(cudaEvent_t event) {
+tool::Task<void> poll(cudaEvent_t event, std::string_view parent) {
     auto status = cudaSuccess;
-    log() << "Polling for event completion..." << std::endl;
+    log(parent) << "Polling for event completion..." << std::endl;
     while ((status = cudaEventQuery(event)) == cudaErrorNotReady) {
-        log() << "Event not ready, retrying..." << std::endl;
+        log(parent) << "Event not ready, retrying..." << std::endl;
         co_await Retry{};
     }
     ERROR_CHECK_CUDA(status);
+    log(parent) << "Event completed successfully" << std::endl;
 }
 
 subtool::Task<DeviceBuffer<int>> clusterization(
@@ -83,7 +84,7 @@ subtool::Task<DeviceBuffer<int>> clusterization(
             ERROR_CHECK_CUDA(cudaEventRecord(event, stream));
         }));
 
-    co_await schedule_on(delegation_scheduler, poll(event));
+    co_await schedule_on(delegation_scheduler, poll(event, self));
 
     auto nClusters = 0;
     for (auto v : h_cells)
@@ -136,7 +137,7 @@ subtool::Task<DeviceBuffer<int>> seeding(
             ERROR_CHECK_CUDA(cudaEventRecord(event, stream));
         }));
 
-    co_await schedule_on(delegation_scheduler, poll(event));
+    co_await schedule_on(delegation_scheduler, poll(event, self));
 
     int nSeeds = 0;
     for (auto v : h_clusters)
@@ -200,7 +201,7 @@ tool::Task<tool::StatusCode> reconstruct(
             ERROR_CHECK_CUDA(cudaEventRecord(event, stream));
         }));
 
-    co_await schedule_on(delegation_scheduler, poll(event));
+    co_await schedule_on(delegation_scheduler, poll(event, self));
 
     log(self) << "Finishing reconstruction" << std::endl;
     co_return tool::StatusCode::SUCCESS;
