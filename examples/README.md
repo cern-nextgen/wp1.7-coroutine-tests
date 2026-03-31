@@ -174,9 +174,8 @@ Link: [alien_delegate.cpp](alien_delegate.cpp), [exec_delegate.cpp](exec_delegat
 
 These examples are a modification of [reconstruction examples](#reconstruction) to delegate all the calls to CUDA API that are happening inside the task to execute on a designated thread by changing scheduler/executor. This represents a specific optimization: invoking CUDA APIs from multiple threads can incur performance penalties due to contention on internal CUDA locks. This contention can be reduced by delegating the calls to a single thread. The examples demonstrate how this optimization can be implemented using coroutines schedulers/executors.
 
-## Event poll 
+## Event poll
 
 Link: [alien_event_poll.cpp](alien_event_poll.cpp), [capy_event_poll.cpp](capy_event_poll.cpp)
 
 These examples are a variant of [delegate examples](#delegate) in which awaiting completion of CUDA operations is done by repeatedly querying the event state instead of using a callback as in earlier examples. All the queries are executed by a specific thread.
-
