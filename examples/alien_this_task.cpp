@@ -1,9 +1,9 @@
 #include <format>
 #include <string_view>
 
-#include "CoroutineTests/alien/this_task.hpp"
 #include "CoroutineTests/alien/schedule_on.hpp"
 #include "CoroutineTests/alien/sync_wait.hpp"
+#include "CoroutineTests/alien/this_task.hpp"
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
 #include "logging_utils.hpp"
