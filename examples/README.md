@@ -182,6 +182,6 @@ These examples are a modification of [reconstruction examples](#reconstruction) 
 
 ## Event poll
 
-Link: [alien_event_poll.cpp](alien_event_poll.cpp), [capy_event_poll.cpp](capy_event_poll.cpp)
+Link: [alien_event_poll.cpp](alien_event_poll.cpp), [exec_event_poll.cpp](exec_event_poll.cpp), [capy_event_poll.cpp](capy_event_poll.cpp)
 
 These examples are a variant of [delegate examples](#delegate) in which awaiting completion of CUDA operations is done by repeatedly querying the event state instead of using a callback as in earlier examples. All the queries are executed by a specific thread.
