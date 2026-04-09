@@ -16,6 +16,7 @@
 #include "CoroutineTests/alien/tool.hpp"
 #include "CoroutineTests/threadpool.hpp"
 #include "logging_utils.hpp"  // log, format_name
+#include "nanospin.hpp"       // launch_nanospin
 
 #define ERROR_CHECK_CUDA(EXP)                                              \
     do {                                                                   \
@@ -109,6 +110,7 @@ subtool::Task<DeviceBuffer<int>> clusterization(
                                              nClusters * sizeof(int), stream));
             ERROR_CHECK_CUDA(cudaMemsetAsync(
                 d_clusters, 1, nClusters / 2 * sizeof(int), stream));
+            launch_nanospin(1'000'000, stream);
         }));
 
     co_return DeviceBuffer<int>{d_clusters,
@@ -160,6 +162,7 @@ subtool::Task<DeviceBuffer<int>> seeding(
                 cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
             ERROR_CHECK_CUDA(
                 cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
+            launch_nanospin(1'000'000, stream);
         }));
 
     co_return DeviceBuffer<int>{d_seeds, static_cast<std::size_t>(nSeeds)};

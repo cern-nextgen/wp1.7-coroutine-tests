@@ -109,6 +109,7 @@ endif()
 option(BUILD_CUDA "Build with CUDA support" OFF)
 if(BUILD_CUDA)
   find_package(CUDAToolkit REQUIRED)
+  enable_language(CUDA)
 endif()
 
 ## targets

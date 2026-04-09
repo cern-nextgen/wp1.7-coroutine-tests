@@ -12,6 +12,7 @@
 
 #include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
 #include "logging_utils.hpp"              // log, format_name
+#include "nanospin.hpp"                   // launch_nanospin
 #include "statuscode.hpp"                 // StatusCodeImpl
 
 namespace tools {
@@ -107,6 +108,7 @@ exec::task<DeviceBuffer<int>> clusterization(
                                              nClusters * sizeof(int), stream));
             ERROR_CHECK_CUDA(cudaMemsetAsync(
                 d_clusters, 1, nClusters / 2 * sizeof(int), stream));
+            launch_nanospin(1'000'000, stream);
         });
     co_await stdexec::on(delegation_ctx.get_scheduler(),
                          std::move(allocate_clusters));
@@ -162,6 +164,7 @@ exec::task<DeviceBuffer<int>> seeding(
                 cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
             ERROR_CHECK_CUDA(
                 cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
+            launch_nanospin(1'000'000, stream);
         });
     co_await stdexec::on(delegation_ctx.get_scheduler(),
                          std::move(allocate_seeds));
