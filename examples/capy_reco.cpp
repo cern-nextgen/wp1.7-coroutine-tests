@@ -10,6 +10,7 @@
 #include "capy_stream_await.hpp"         // StreamIoAwaitable
 #include "capy_task_arena_executor.hpp"  // TaskArenaExecutor
 #include "logging_utils.hpp"             // log, format_name
+#include "nanospin.hpp"                  // launch_nanospin
 #include "statuscode.hpp"                // StatusCodeImpl
 
 namespace tools {
@@ -70,6 +71,7 @@ boost::capy::task<DeviceBuffer<int>> clusterization(DeviceBuffer<int> cells,
         cudaMemsetAsync(d_clusters, 0, nClusters * sizeof(int), stream));
     ERROR_CHECK_CUDA(
         cudaMemsetAsync(d_clusters, 1, nClusters / 2 * sizeof(int), stream));
+    launch_nanospin(1'000'000, stream);
 
     co_return DeviceBuffer<int>{d_clusters,
                                 static_cast<std::size_t>(nClusters)};
@@ -109,6 +111,7 @@ boost::capy::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
     ERROR_CHECK_CUDA(cudaMemsetAsync(d_seeds, 0, nSeeds * sizeof(int), stream));
     ERROR_CHECK_CUDA(
         cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
+    launch_nanospin(1'000'000, stream);
 
     co_return DeviceBuffer<int>{d_seeds, static_cast<std::size_t>(nSeeds)};
 }
