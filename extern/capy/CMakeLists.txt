@@ -6,7 +6,7 @@ message(STATUS "Building capy as part of the CoroutineTests project")
 
 # Declare where to get stdexec from.
 set(COROUTINETESTS_CAPY_SOURCE
-    "URL;https://github.com/cppalliance/capy/archive/9144290189fa149b27617c7d9a476c8fbffb7b8c.zip;URL_MD5;3f537c7e80ea1954a1c322cb3d2ce5fd"
+    "GIT_REPOSITORY;https://github.com/cppalliance/capy.git;GIT_TAG;9144290189fa149b27617c7d9a476c8fbffb7b8c;GIT_SHALLOW;TRUE"
     CACHE STRING "Source for capy, when built as part of this project")
 
 mark_as_advanced(COROUTINETESTS_CAPY_SOURCE)
