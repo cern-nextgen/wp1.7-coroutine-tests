@@ -44,10 +44,12 @@ boost::capy::task<void> delegate(F&& f) {
 }
 
 struct Retry {
+    boost::capy::continuation continuation;
     bool await_ready() const noexcept { return false; }
     void await_suspend(std::coroutine_handle<> handle,
-                       boost::capy::io_env const* env) const noexcept {
-        env->executor.post(handle);
+                       boost::capy::io_env const* env) noexcept {
+        continuation.h = handle;
+        env->executor.post(continuation);
     }
     void await_resume() const noexcept {}
 };

@@ -3,6 +3,7 @@
 #include <tbb/task_arena.h>
 
 #include <boost/capy.hpp>
+#include <boost/capy/continuation.hpp>
 #include <coroutine>
 
 class TaskArenaContext : public boost::capy::execution_context {
@@ -31,11 +32,11 @@ class TaskArenaExecutor {
 
     TaskArenaExecutor(TaskArenaExecutor const&) noexcept = default;
 
-    std::coroutine_handle<> dispatch(std::coroutine_handle<> h) const {
-        m_context->schedule(h);
+    std::coroutine_handle<> dispatch(boost::capy::continuation& c) const {
+        m_context->schedule(c.h);
         return std::noop_coroutine();
     }
-    void post(std::coroutine_handle<> h) const { m_context->schedule(h); }
+    void post(boost::capy::continuation& c) const { m_context->schedule(c.h); }
     TaskArenaContext& context() const noexcept { return *m_context; }
     void on_work_started() const noexcept {}
     void on_work_finished() const noexcept {}

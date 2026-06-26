@@ -1,4 +1,5 @@
 #include <boost/capy.hpp>
+#include <boost/capy/continuation.hpp>
 #include <chrono>
 #include <coroutine>
 #include <cstdlib>
@@ -32,13 +33,13 @@ class VerboseExecutor {
                       "VerboseExecutor should be a valid capy Executor");
     }
 
-    auto post(std::coroutine_handle<> h) const {
+    auto post(boost::capy::continuation& c) const {
         log() << "executor posting new work item" << std::endl;
-        m_executor->post(h);
+        m_executor->post(c);
     }
-    auto dispatch(std::coroutine_handle<> h) const {
+    auto dispatch(boost::capy::continuation& c) const {
         log() << "executor dispatching new work item" << std::endl;
-        return m_executor->dispatch(h);
+        return m_executor->dispatch(c);
     }
     auto& context() const noexcept { return m_executor->context(); }
     auto on_work_started() const noexcept {
