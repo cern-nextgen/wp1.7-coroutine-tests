@@ -1,12 +1,7 @@
 #include <cuda_runtime_api.h>
 #include <tbb/task_arena.h>
 
-#include <cstddef>
-#include <exec/async_scope.hpp>
-#include <exec/task.hpp>
-#include <iostream>
-#include <stdexec/execution.hpp>
-
+#include "exec_backend.hpp"               // std exec backend selection
 #include "exec_stream_await_sender.hpp"   // stream_await_sender
 #include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
 #include "logging_utils.hpp"              // log, format_name
@@ -36,9 +31,9 @@ struct DeviceBuffer {
     std::size_t size = 0;
 };
 
-exec::task<DeviceBuffer<int>> clusterization(DeviceBuffer<int> cells,
-                                             cudaStream_t stream,
-                                             std::string_view parent) {
+execution::task<DeviceBuffer<int>> clusterization(DeviceBuffer<int> cells,
+                                                  cudaStream_t stream,
+                                                  std::string_view parent) {
 
     const auto self = format_name(parent, "clusterization");
     log(self) << "Starting clusterization" << std::endl;
@@ -77,9 +72,9 @@ exec::task<DeviceBuffer<int>> clusterization(DeviceBuffer<int> cells,
                                 static_cast<std::size_t>(nClusters)};
 }
 
-exec::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
-                                      cudaStream_t stream,
-                                      std::string_view parent) {
+execution::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
+                                           cudaStream_t stream,
+                                           std::string_view parent) {
 
     const auto self = format_name(parent, "seeding");
     log(self) << "Starting seeding" << std::endl;
@@ -116,8 +111,8 @@ exec::task<DeviceBuffer<int>> seeding(DeviceBuffer<int> clusters,
     co_return DeviceBuffer<int>{d_seeds, static_cast<std::size_t>(nSeeds)};
 }
 
-exec::task<tools::StatusCode> reconstruct(cudaStream_t stream,
-                                          std::string_view parent) {
+execution::task<tools::StatusCode> reconstruct(cudaStream_t stream,
+                                               std::string_view parent) {
     const auto self = format_name(parent, "reconstruction");
     log(self) << "Starting reconstruction" << std::endl;
 
@@ -170,8 +165,8 @@ int main() {
         std::cout << "--- Single event, synchronous wait for completion ---\n";
         log() << "main Launching algorithm..." << std::endl;
         auto [status] =
-            stdexec::sync_wait(
-                stdexec::starts_on(scheduler, reconstruct(stream, "main")))
+            execution::sync_wait(
+                execution::starts_on(scheduler, reconstruct(stream, "main")))
                 .value();
         log() << "main Final status of algorithm " << status << "" << std::endl;
         ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
@@ -186,22 +181,21 @@ int main() {
             ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         }
 
-        auto scope = exec::async_scope{};
+        auto scope = Scope{};
         log() << "main Launching algorithms..." << std::endl;
 
         auto payload = [](std::vector<cudaStream_t> streams,
                           std::vector<tools::StatusCode>& statuses,
-                          int i) -> exec::task<void> {
+                          int i) -> execution::task<void> {
             const auto name = std::format("event{}:", i);
             auto& stream = streams.at(i);
             auto& status = statuses.at(i);
             status = co_await reconstruct(stream, name);
         };
         for (std::size_t i = 0; i < streams.size(); ++i) {
-            scope.spawn(
-                stdexec::starts_on(scheduler, payload(streams, status, i)));
+            scope.spawn(scheduler, payload(streams, status, i));
         }
-        stdexec::sync_wait(scope.on_empty());
+        execution::sync_wait(scope.join());
 
         for (auto& stream : streams) {
             ERROR_CHECK_CUDA(cudaStreamDestroy(stream));

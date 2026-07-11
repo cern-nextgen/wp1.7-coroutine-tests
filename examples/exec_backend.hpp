@@ -19,6 +19,8 @@ using run_loop = execution::run_loop;
 }  // namespace execution
 #endif
 
+#include <thread>
+
 // Asynchronous/Counting scope helper
 struct Scope {
 
@@ -59,5 +61,24 @@ struct Scope {
 #else
         return scope.on_empty();
 #endif  // USE_BEMAN
+    }
+};
+
+class single_thread_context {
+    execution::run_loop loop_;
+    std::thread thread_;
+
+    public:
+    single_thread_context() : loop_(), thread_([this] { loop_.run(); }) {}
+
+    ~single_thread_context() {
+        loop_.finish();
+        thread_.join();
+    }
+
+    auto get_scheduler() noexcept { return loop_.get_scheduler(); }
+
+    [[nodiscard]] auto get_thread_id() const noexcept -> std::thread::id {
+        return thread_.get_id();
     }
 };

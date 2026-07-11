@@ -2,12 +2,9 @@
 #include <tbb/task_arena.h>
 
 #include <cstddef>
-#include <exec/async_scope.hpp>
-#include <exec/single_thread_context.hpp>
-#include <exec/task.hpp>
 #include <iostream>
-#include <stdexec/execution.hpp>
 
+#include "exec_backend.hpp"               // std exec backend selection
 #include "exec_stream_await_sender.hpp"   // stream_await_sender
 #include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
 #include "logging_utils.hpp"              // log, format_name
@@ -37,9 +34,9 @@ struct DeviceBuffer {
     std::size_t size = 0;
 };
 
-exec::task<DeviceBuffer<int>> clusterization(
+execution::task<DeviceBuffer<int>> clusterization(
     DeviceBuffer<int> cells, cudaStream_t stream,
-    exec::single_thread_context& delegation_ctx, std::string_view parent) {
+    single_thread_context& delegation_ctx, std::string_view parent) {
 
     const auto self = format_name(parent, "clusterization");
     log(self) << "Starting clusterization" << std::endl;
@@ -49,15 +46,16 @@ exec::task<DeviceBuffer<int>> clusterization(
     // Copy cells back to host to count non-zero entries
     auto h_cells = std::vector<int>(nCells);
 
-    stdexec::sender auto copy_cells =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto copy_cells =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated copy of cells from device to host"
                       << std::endl;
             ERROR_CHECK_CUDA(cudaMemcpyAsync(h_cells.data(), cells.ptr,
                                              nCells * sizeof(int),
                                              cudaMemcpyDeviceToHost, stream));
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(), std::move(copy_cells));
+    co_await execution::on(delegation_ctx.get_scheduler(),
+                           std::move(copy_cells));
 
     ERROR_CHECK_CUDA(co_await stream_await_sender{stream});
 
@@ -71,8 +69,8 @@ exec::task<DeviceBuffer<int>> clusterization(
     // Allocate clusters of appropriate size on device
     int* d_clusters = nullptr;
 
-    stdexec::sender auto allocate_clusters =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto allocate_clusters =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated allocation of clusters on device"
                       << std::endl;
             ERROR_CHECK_CUDA(
@@ -86,16 +84,16 @@ exec::task<DeviceBuffer<int>> clusterization(
                 d_clusters, 1, nClusters / 2 * sizeof(int), stream));
             launch_nanospin(1'000'000, stream);
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(),
-                         std::move(allocate_clusters));
+    co_await execution::on(delegation_ctx.get_scheduler(),
+                           std::move(allocate_clusters));
 
     co_return DeviceBuffer<int>{d_clusters,
                                 static_cast<std::size_t>(nClusters)};
 }
 
-exec::task<DeviceBuffer<int>> seeding(
+execution::task<DeviceBuffer<int>> seeding(
     DeviceBuffer<int> clusters, cudaStream_t stream,
-    exec::single_thread_context& delegation_ctx, std::string_view parent) {
+    single_thread_context& delegation_ctx, std::string_view parent) {
 
     const auto self = format_name(parent, "seeding");
     log(self) << "Starting seeding" << std::endl;
@@ -105,16 +103,16 @@ exec::task<DeviceBuffer<int>> seeding(
     // Copy clusters to host to count non-zero entries
     auto h_clusters = std::vector<int>(nClusters);
 
-    stdexec::sender auto copy_clusters =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto copy_clusters =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated copy of clusters from device to host"
                       << std::endl;
             ERROR_CHECK_CUDA(cudaMemcpyAsync(h_clusters.data(), clusters.ptr,
                                              nClusters * sizeof(int),
                                              cudaMemcpyDeviceToHost, stream));
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(),
-                         std::move(copy_clusters));
+    co_await execution::on(delegation_ctx.get_scheduler(),
+                           std::move(copy_clusters));
 
     ERROR_CHECK_CUDA(co_await stream_await_sender{stream});
 
@@ -128,8 +126,8 @@ exec::task<DeviceBuffer<int>> seeding(
     // Allocate seeds of appropriate size on device
     int* d_seeds = nullptr;
 
-    stdexec::sender auto allocate_seeds =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto allocate_seeds =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated allocation of seeds on device" << std::endl;
             ERROR_CHECK_CUDA(cudaMallocAsync(reinterpret_cast<void**>(&d_seeds),
                                              nSeeds * sizeof(int), stream));
@@ -141,22 +139,22 @@ exec::task<DeviceBuffer<int>> seeding(
                 cudaMemsetAsync(d_seeds, 1, nSeeds / 2 * sizeof(int), stream));
             launch_nanospin(1'000'000, stream);
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(),
-                         std::move(allocate_seeds));
+    co_await execution::on(delegation_ctx.get_scheduler(),
+                           std::move(allocate_seeds));
 
     co_return DeviceBuffer<int>{d_seeds, static_cast<std::size_t>(nSeeds)};
 }
 
-exec::task<tools::StatusCode> reconstruct(
-    cudaStream_t stream, exec::single_thread_context& delegation_ctx,
+execution::task<tools::StatusCode> reconstruct(
+    cudaStream_t stream, single_thread_context& delegation_ctx,
     std::string_view parent) {
     const auto self = format_name(parent, "reconstruction");
     log(self) << "Starting reconstruction" << std::endl;
 
     // Allocate some dummy input data on the device
     auto cells = DeviceBuffer<int>{nullptr, 1000};
-    stdexec::sender auto allocate_cells =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto allocate_cells =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated allocation of input data on device"
                       << std::endl;
             ERROR_CHECK_CUDA(
@@ -165,8 +163,8 @@ exec::task<tools::StatusCode> reconstruct(
             ERROR_CHECK_CUDA(cudaMemsetAsync(cells.ptr, 1,
                                              cells.size * sizeof(int), stream));
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(),
-                         std::move(allocate_cells));
+    co_await execution::on(delegation_ctx.get_scheduler(),
+                           std::move(allocate_cells));
 
     // Run the clusterization and seeding steps
     auto clusters =
@@ -174,14 +172,14 @@ exec::task<tools::StatusCode> reconstruct(
     auto seeds = co_await seeding(clusters, stream, delegation_ctx, self);
 
     // Cleanup
-    stdexec::sender auto cleanup =
-        stdexec::just() | stdexec::then([&]() {
+    execution::sender auto cleanup =
+        execution::just() | execution::then([&]() {
             log(self) << "Delegated cleanup of device memory" << std::endl;
             ERROR_CHECK_CUDA(cudaFreeAsync(cells.ptr, stream));
             ERROR_CHECK_CUDA(cudaFreeAsync(clusters.ptr, stream));
             ERROR_CHECK_CUDA(cudaFreeAsync(seeds.ptr, stream));
         });
-    co_await stdexec::on(delegation_ctx.get_scheduler(), std::move(cleanup));
+    co_await execution::on(delegation_ctx.get_scheduler(), std::move(cleanup));
 
     ERROR_CHECK_CUDA(co_await stream_await_sender{stream});
 
@@ -209,7 +207,7 @@ int main() {
 
     tbb::task_arena task_arena{2, 0};
     execution::scheduler auto scheduler = get_scheduler(task_arena, false);
-    exec::single_thread_context delegation_context;
+    single_thread_context delegation_context;
 
     {
         cudaStream_t stream;
@@ -217,8 +215,8 @@ int main() {
         std::cout << "--- Single event, synchronous wait for completion ---\n";
         log() << "main Launching algorithm..." << std::endl;
         auto [status] =
-            stdexec::sync_wait(
-                stdexec::starts_on(
+            execution::sync_wait(
+                execution::starts_on(
                     scheduler, reconstruct(stream, delegation_context, "main")))
                 .value();
         log() << "main Final status of algorithm " << status << "" << std::endl;
@@ -234,23 +232,23 @@ int main() {
             ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         }
 
-        auto scope = exec::async_scope{};
+        auto scope = Scope{};
         log() << "main Launching algorithms..." << std::endl;
 
-        auto payload = [](std::vector<cudaStream_t> streams,
-                          std::vector<tools::StatusCode>& statuses, int i,
-                          exec::single_thread_context& delegation_ctx)
-            -> exec::task<void> {
+        auto payload =
+            [](std::vector<cudaStream_t> streams,
+               std::vector<tools::StatusCode>& statuses, int i,
+               single_thread_context& delegation_ctx) -> execution::task<void> {
             const auto name = std::format("event{}:", i);
             auto& stream = streams.at(i);
             auto& status = statuses.at(i);
             status = co_await reconstruct(stream, delegation_ctx, name);
         };
         for (std::size_t i = 0; i < streams.size(); ++i) {
-            scope.spawn(stdexec::starts_on(
-                scheduler, payload(streams, status, i, delegation_context)));
+            scope.spawn(scheduler,
+                        payload(streams, status, i, delegation_context));
         }
-        stdexec::sync_wait(scope.on_empty());
+        execution::sync_wait(scope.join());
 
         for (auto& stream : streams) {
             ERROR_CHECK_CUDA(cudaStreamDestroy(stream));

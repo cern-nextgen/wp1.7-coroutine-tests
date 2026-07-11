@@ -1,27 +1,28 @@
 #pragma once
 
 #include <cuda_runtime_api.h>
-#include <driver_types.h>
 
-#include <stdexec/execution.hpp>
+#include "exec_backend.hpp"  // std exec backend selection
 /// Wrapper sender suspending execution until all operations on a CUDA
 /// stream are complete.
 
 class stream_await_sender {
     public:
+    struct env {};
+
     // associated operation state
-    template <stdexec::receiver Receiver>
+    template <execution::receiver Receiver>
     class stream_await_operation;
 
-    using sender_concept = stdexec::sender_t;
+    using sender_concept = execution::sender_t;
     using completion_signatures =
-        stdexec::completion_signatures<stdexec::set_value_t(cudaError_t)>;
+        execution::completion_signatures<execution::set_value_t(cudaError_t)>;
 
     explicit stream_await_sender(const cudaStream_t stream)
         : m_stream(stream) {}
-    stdexec::env<> get_env() const noexcept { return {}; }
+    env get_env() const noexcept { return {}; }
 
-    template <stdexec::receiver Receiver>
+    template <execution::receiver Receiver>
     auto connect(Receiver&& receiver) const {
         return stream_await_operation<std::remove_cvref_t<Receiver>>(
             std::forward<Receiver>(receiver), m_stream);
@@ -33,10 +34,10 @@ class stream_await_sender {
 
 /// Operation state associated with @c stream_await_sender
 ///
-template <stdexec::receiver Receiver>
+template <execution::receiver Receiver>
 class stream_await_sender::stream_await_operation {
     public:
-    using operation_state_concept = stdexec::operation_state_t;
+    using operation_state_concept = execution::operation_state_t;
 
     stream_await_operation(Receiver&& recv, const cudaStream_t stream)
         : m_receiver(std::forward<Receiver>(recv)), m_stream(stream) {}
@@ -47,7 +48,7 @@ class stream_await_sender::stream_await_operation {
         // If setting up the callback failed, we need to propage the error
         // immediately
         if (err != cudaSuccess) {
-            stdexec::set_value(std::move(m_receiver), err);
+            execution::set_value(std::move(m_receiver), err);
         }
     }
 
@@ -57,8 +58,8 @@ class stream_await_sender::stream_await_operation {
 
     static void callback(void* userData) {
         auto& recv = *static_cast<Receiver*>(userData);
-        stdexec::set_value(std::move(recv), cudaSuccess);
+        execution::set_value(std::move(recv), cudaSuccess);
     }
 };
 
-static_assert(stdexec::sender<stream_await_sender>);
+static_assert(execution::sender<stream_await_sender>);
