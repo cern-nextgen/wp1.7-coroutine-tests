@@ -22,6 +22,8 @@ Building the examples using `std::generator` or `beman.task` requires C++23 stan
 cmake --workflow --preset 23
 ```
 
+The `20-cuda` and `23-cuda` presets can be used to enable building examples using CUDA (version of CUDA used must support given C++ standard).
+
 Then run the examples, for instance:
 
 ```sh

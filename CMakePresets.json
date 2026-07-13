@@ -47,6 +47,16 @@
                 "CMAKE_CXX_STANDARD": "23",
                 "BUILD_BEMAN_TASK": "ON"
             }
+        },
+        {
+            "name": "23-cuda",
+            "displayName": "Configure preset constrained to C++23 with CUDA support",
+            "inherits": [
+                "23"
+            ],
+            "cacheVariables": {
+                "BUILD_CUDA": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -79,6 +89,14 @@
             "configurePreset": "23",
             "inherits": [
                 "default"
+            ]
+        },
+        {
+            "name": "23-cuda",
+            "displayName": "Build with C++23 and CUDA support",
+            "configurePreset": "23-cuda",
+            "inherits": [
+                "23"
             ]
         }
     ],
@@ -119,6 +137,19 @@
                 {
                     "type": "build",
                     "name": "23"
+                }
+            ]
+        },
+        {
+            "name": "23-cuda",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "23-cuda"
+                },
+                {
+                    "type": "build",
+                    "name": "23-cuda"
                 }
             ]
         }
