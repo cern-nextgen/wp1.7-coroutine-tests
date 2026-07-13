@@ -10,7 +10,8 @@ set(COROUTINETESTS_STDEXEC_SOURCE
     CACHE STRING "Source for stdexec, when built as part of this project")
 
 mark_as_advanced(COROUTINETESTS_STDEXEC_SOURCE)
-FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE})
+FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE}
+                    PATCH_COMMAND patch -N -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/tbb_find.patch")
 
 # Turn off build tests, examples, and docs.
 set(STDEXEC_BUILD_EXAMPLES FALSE)
