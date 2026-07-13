@@ -270,9 +270,20 @@ int main() {
                 status.at(i) = code;
                 done.count_down();
             };
+
+// silence false-positive warning about uninitialized variables in Capy
+// allocator, affected GCC 15, 16
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
             boost::capy::run_async(executor, result_handler)(
                 reconstruct(streams.at(i), events.at(i), delegation_thread,
                             "event" + std::to_string(i)));
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
         }
         done.wait();
         for (std::size_t i = 0; i < streams.size(); ++i) {
