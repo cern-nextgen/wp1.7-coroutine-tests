@@ -104,6 +104,14 @@ Link: [exec_tbb.cpp](exec_tbb.cpp)
 
 This is a variant of the ["Exec task" example](#exec-task), but using a custom C++ senders/receivers scheduler to execute task coroutines on Intel TBB task arena.
 
+## Exec Reschedule
+
+This example demonstrates how to use the custom scheduler from the ["Exec TBB" example](#exec-tbb) to schedule either task coroutines or senders, with a particular focus on the thread on which continuations execute. It can also be used to compare different `std::execution` implementations and observe when they submit continuations back to the scheduler versus when continuations execute as part of the same work item.
+
+Link: [exec_reschedule.cpp](exec_reschedule.cpp)
+
+
+
 ## Alien
 
 Link: [alien.cpp](alien.cpp)
