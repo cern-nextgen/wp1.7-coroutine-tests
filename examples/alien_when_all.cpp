@@ -61,17 +61,18 @@ algorithm::Task<algorithm::StatusCode> algorithm_execute(
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Schedule called, enqueuing  execution" << std::endl;
+        log("Scheduler") << "Schedule called, enqueuing  execution"
+                         << std::endl;
         threadpool.enqueue_task(handle);
     };
-    log() << "main Launching algorithm..." << std::endl;
+    log("main") << "Launching algorithm..." << std::endl;
     auto t = algorithm_execute("main");
     auto future = t.schedule_on(scheduler);
-    log() << "main Waiting for algorithm completion..." << std::endl;
+    log("main") << "Waiting for algorithm completion..." << std::endl;
     auto status = future.get();
-    log() << "main Final status of algorithm " << status << "" << std::endl;
+    log("main") << "Final status of algorithm " << status << "" << std::endl;
     return 0;
 }

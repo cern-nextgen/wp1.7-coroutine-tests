@@ -52,23 +52,23 @@ tool::Task<tool::StatusCode> outer_most(
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler called, enqueuing work" << std::endl;
+        log("Scheduler") << "Enqueuing work" << std::endl;
         threadpool.enqueue_task(handle);
     };
 
     CoroutineTests::Threadpool inner_threadpool(1);
     auto inner_scheduler = [&inner_threadpool](std::coroutine_handle<> handle) {
-        log() << "inner_scheduler called, enqueuing work" << std::endl;
+        log("InnerScheduler") << "Enqueuing work" << std::endl;
         inner_threadpool.enqueue_task(handle);
     };
 
-    log() << "main Launching outer_most and waiting for completion..."
-          << std::endl;
+    log("main") << "Launching outer_most and waiting for completion..."
+                << std::endl;
     auto status = CoroutineTests::alien::sync_wait(
         scheduler, outer_most(inner_scheduler, "main"));
-    log() << "main Final status of outer_most " << status << "" << std::endl;
+    log("main") << "Final status of outer_most " << status << "" << std::endl;
     return 0;
 }

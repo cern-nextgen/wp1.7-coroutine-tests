@@ -114,19 +114,19 @@ manual_algorithm::Task<manual_algorithm::StatusCode> algorithm_execute(
 enum class State { READY, SCHEDULED, /*SUSPENDED,*/ DONE };
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     std::atomic<State> state{State::READY};
     // Scheduler that sets READY state when scheduled
     auto scheduler = [&state](std::coroutine_handle<>) {
-        log() << "scheduler Schedule called" << std::endl;
+        log("Scheduler") << "Schedule called" << std::endl;
         state.store(State::READY);
     };
     auto threadpool = CoroutineTests::Threadpool(2);
 
     auto t = algorithm_execute("main");
     t.set_scheduler(scheduler);
-    log() << "main Starting Task" << std::endl;
+    log("main") << "Starting Task" << std::endl;
     manual_algorithm::StatusCode result;
 
     // Main loop resuming execution of algorithm on a threadpool when state is
@@ -134,8 +134,8 @@ int main() {
     // other operations such as transition between coroutines won't change the
     // state
     while (state.load() != State::DONE) {
-        log() << "main Task not DONE yet, waiting for READY state..."
-              << std::endl;
+        log("main") << "Task not DONE yet, waiting for READY state..."
+                    << std::endl;
         while (true) {
             State s = state.load();
             if (s == State::READY || s == State::DONE)
@@ -144,10 +144,10 @@ int main() {
         }
 
         if (state.load() == State::DONE) {
-            log() << "main Detected DONE state, exiting loop" << std::endl;
+            log("main") << "Detected DONE state, exiting loop" << std::endl;
             break;
         }
-        log() << "main Task ready to resume, enqueuing ..." << std::endl;
+        log("main") << "Task ready to resume, enqueuing ..." << std::endl;
         state.store(State::SCHEDULED);
         threadpool.enqueue_task([&state, &t, &result]() {
             std::optional<manual_algorithm::StatusCode> res;
@@ -166,7 +166,7 @@ int main() {
             }
         });
     }
-    log() << "main Task finished with result: " << result << std::endl;
+    log("main") << "Task finished with result: " << result << std::endl;
 
     return 0;
 }

@@ -51,13 +51,13 @@ struct VerboseScheduler {
         // connect() and completion-signature computation.
         auto make_sender() noexcept {
             return execution::just() | execution::then([] {
-                       log()
-                           << "scheduler Scheduling new work item" << std::endl;
+                       log("Scheduler")
+                           << "Scheduling new work item" << std::endl;
                    }) |
                    execution::continues_on(baseSched) | execution::then([] {
-                       log() << "scheduler Scheduled work item to run on this "
-                                "thread "
-                             << std::endl;
+                       log("Scheduler") << "Scheduled work item to run on this "
+                                           "thread "
+                                        << std::endl;
                    });
         }
 
@@ -154,7 +154,7 @@ execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     execution::run_loop loop;
     std::jthread worker([&](std::stop_token st) {
@@ -177,9 +177,9 @@ int main() {
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    log() << "main waiting for algorithm to finish..." << std::endl;
+    log("main") << "Waiting for algorithm to finish..." << std::endl;
     // Block until all work items in the scope are done
     execution::sync_wait(scope.join());
-    log() << "main Done" << std::endl;
+    log("main") << "Done" << std::endl;
     return EXIT_SUCCESS;
 }

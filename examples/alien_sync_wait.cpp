@@ -33,21 +33,21 @@ tool::Task<void> void_execute(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
     CoroutineTests::Threadpool threadpool(1);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Reschedule called, enqueuing  resumption"
-              << std::endl;
+        log("Scheduler") << "Reschedule called, enqueuing  resumption"
+                         << std::endl;
         threadpool.enqueue_task(handle);
     };
-    log() << "main Launching execute and waiting for completion..."
-          << std::endl;
+    log("main") << "Launching execute and waiting for completion..."
+                << std::endl;
     auto status = CoroutineTests::alien::sync_wait(scheduler, execute("main"));
-    log() << "main Final status of execute " << status << "" << std::endl;
+    log("main") << "Final status of execute " << status << "" << std::endl;
     std::cout << std::endl;
-    log() << "main Launching void_execute and waiting for completion..."
-          << std::endl;
+    log("main") << "Launching void_execute and waiting for completion..."
+                << std::endl;
     CoroutineTests::alien::sync_wait(scheduler, void_execute("main"));
-    log() << "main Finished void_execute" << std::endl;
+    log("main") << "Finished void_execute" << std::endl;
     return 0;
 }

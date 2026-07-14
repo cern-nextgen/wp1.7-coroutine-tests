@@ -34,20 +34,20 @@ class VerboseExecutor {
     }
 
     auto post(boost::capy::continuation& c) const {
-        log() << "executor posting new work item" << std::endl;
+        log() << "Executor posting new work item" << std::endl;
         m_executor->post(c);
     }
     auto dispatch(boost::capy::continuation& c) const {
-        log() << "executor dispatching new work item" << std::endl;
+        log() << "Executor dispatching new work item" << std::endl;
         return m_executor->dispatch(c);
     }
     auto& context() const noexcept { return m_executor->context(); }
     auto on_work_started() const noexcept {
-        log() << "executor work started" << std::endl;
+        log() << "Executor work started" << std::endl;
         m_executor->on_work_started();
     }
     auto on_work_finished() const noexcept {
-        log() << "executor work finished" << std::endl;
+        log() << "Executor work finished" << std::endl;
         m_executor->on_work_finished();
     }
     bool operator==(const VerboseExecutor& other) const noexcept {
@@ -127,7 +127,7 @@ boost::capy::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     auto pool = boost::capy::thread_pool(4);
     auto pool_executor = pool.get_executor();
@@ -140,14 +140,14 @@ int main() {
         done.count_down();
     };
 
-    log() << "main launching algorithm" << std::endl;
+    log("main") << "Launching algorithm" << std::endl;
     boost::capy::run_async(verbose_executor,
                            result_handler)(algorithm_execute("main"));
 
-    log() << "main waiting for algorithm to finish..." << std::endl;
+    log("main") << "Waiting for algorithm to finish..." << std::endl;
     done.wait();
     log() << "Final status of algorithm " << final_result << std::endl;
 
-    log() << "main Done" << std::endl;
+    log("main") << "Done" << std::endl;
     return EXIT_SUCCESS;
 }

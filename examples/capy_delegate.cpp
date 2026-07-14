@@ -191,7 +191,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     auto task_arena = tbb::task_arena{2, 0};
     auto context = TaskArenaContext(task_arena);
@@ -209,12 +209,12 @@ int main() {
             done.count_down();
         };
 
-        log() << "main Launching algorithm..." << std::endl;
+        log("main") << "Launching algorithm..." << std::endl;
         boost::capy::run_async(executor, result_handler)(
             reconstruct(stream, delegation_thread, "main"));
         done.wait();
-        log() << "main Final status of algorithm " << final_result << ""
-              << std::endl;
+        log("main") << "Final status of algorithm " << final_result << ""
+                    << std::endl;
         ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
     }
 
@@ -228,7 +228,7 @@ int main() {
         }
 
         auto done = std::latch{static_cast<std::ptrdiff_t>(streams.size())};
-        log() << "main Launching algorithms..." << std::endl;
+        log("main") << "Launching algorithms..." << std::endl;
 
         for (std::size_t i = 0; i < streams.size(); ++i) {
             auto result_handler = [&done, &status, i](tools::StatusCode code) {
@@ -253,7 +253,7 @@ int main() {
             ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
         }
 
-        log() << "main All algorithms completed. Final statuses: ";
+        log("main") << "All algorithms completed. Final statuses: ";
         for (auto s : status) {
             std::cout << s << ' ';
         }

@@ -95,7 +95,7 @@ execution::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     tbb::task_arena arena{2};
     execution::scheduler auto scheduler = get_scheduler(arena);
@@ -111,9 +111,9 @@ int main() {
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    log() << "main waiting for algorithm to finish..." << std::endl;
+    log("main") << "Waiting for algorithm to finish..." << std::endl;
     // Block until all work items in the scope are done
     execution::sync_wait(scope.join());
-    log() << "main Done" << std::endl;
+    log("main") << "Done" << std::endl;
     return EXIT_SUCCESS;
 }

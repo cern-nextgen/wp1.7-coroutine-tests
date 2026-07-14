@@ -202,7 +202,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     tbb::task_arena task_arena{2, 0};
     auto scheduler = [&task_arena](std::coroutine_handle<> handle) {
@@ -219,10 +219,11 @@ int main() {
         cudaStream_t stream;
         ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         std::cout << "--- Single event, synchronous wait for completion ---\n";
-        log() << "main Launching algorithm..." << std::endl;
+        log("main") << "Launching algorithm..." << std::endl;
         auto status = sync_wait(
             scheduler, reconstruct(stream, delegation_scheduler, "main"));
-        log() << "main Final status of algorithm " << status << "" << std::endl;
+        log("main") << "Final status of algorithm " << status << ""
+                    << std::endl;
         ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
     }
 
@@ -236,7 +237,7 @@ int main() {
         }
 
         auto scope = counting_scope{};
-        log() << "main Launching algorithms..." << std::endl;
+        log("main") << "Launching algorithms..." << std::endl;
 
         auto payload = [](std::vector<cudaStream_t> streams,
                           std::vector<tool::StatusCode>& statuses,
@@ -262,7 +263,7 @@ int main() {
             ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
         }
 
-        log() << "main All algorithms completed. Final statuses: ";
+        log("main") << "All algorithms completed. Final statuses: ";
         for (auto s : status) {
             std::cout << s << ' ';
         }
