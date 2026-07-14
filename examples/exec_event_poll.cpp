@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <exec/async_scope.hpp>
-#include <exec/repeat_effect_until.hpp>
+#include <exec/repeat_until.hpp>
 #include <exec/single_thread_context.hpp>
 #include <exec/task.hpp>
 #include <iostream>
@@ -56,7 +56,7 @@ static auto poll_event(cudaEvent_t event,
             return true;
         });
 
-    return exec::repeat_effect_until(execution::starts_on(
+    return exec::repeat_until(execution::starts_on(
         delegation_ctx.get_scheduler(), std::move(query_once)));
 }
 

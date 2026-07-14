@@ -1,0 +1,17 @@
+diff --git a/cmake/Modules/ConfigureTBB.cmake b/cmake/Modules/ConfigureTBB.cmake
+index 6678f61a..b7fd1b19 100644
+--- a/cmake/Modules/ConfigureTBB.cmake
++++ b/cmake/Modules/ConfigureTBB.cmake
+@@ -1,5 +1,6 @@
+ option(STDEXEC_ENABLE_TBB "Enable TBB targets" OFF)
+
++if (STDEXEC_ENABLE_TBB)
+ include(CheckIncludeFileCXX)
+ rapids_find_package(
+   TBB QUIET
+@@ -68,3 +69,5 @@ if (STDEXEC_ENABLE_TBB)
+     )
+   endif()
+ endif()
++
++endif()

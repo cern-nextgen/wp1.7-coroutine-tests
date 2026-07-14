@@ -44,27 +44,37 @@ struct VerboseScheduler {
     struct Sender {
         BaseScheduler baseSched;
 
-        // mandatory type aliases for sender
+        // mandatory type alias for sender
         using sender_concept = execution::sender_t;
-        using completion_signatures = execution::completion_signatures_of_t<
-            typename execution::schedule_result_t<BaseScheduler>>;
 
-        // mandatory connect() method for sender
-        // delegate to the base scheduler and log the scheduling
-        auto connect(execution::receiver auto receiver) noexcept {
-            return execution::connect(
-                execution::just() | execution::then([] {
-                    log() << "scheduler Scheduling new work item" << std::endl;
-                }) | execution::continues_on(baseSched) |
-                    execution::then([] {
-                        log() << "scheduler Scheduled work item to run on this "
-                                 "thread "
-                              << std::endl;
-                    }),
-                std::move(receiver));
+        // Build the actual sender pipeline once, share it between
+        // connect() and completion-signature computation.
+        auto make_sender() noexcept {
+            return execution::just() | execution::then([] {
+                       log()
+                           << "scheduler Scheduling new work item" << std::endl;
+                   }) |
+                   execution::continues_on(baseSched) | execution::then([] {
+                       log() << "scheduler Scheduled work item to run on this "
+                                "thread "
+                             << std::endl;
+                   });
         }
 
-        // mandatory get_env() method for scheduler's sender
+        // mandatory get_completion_signatures() method for sender
+        template <class Env>
+        auto get_completion_signatures(Env&&) noexcept
+            -> execution::completion_signatures_of_t<decltype(make_sender()),
+                                                     Env> {
+            return {};
+        }
+
+        // mandatory connect() method for sender
+        auto connect(execution::receiver auto receiver) noexcept {
+            return execution::connect(make_sender(), std::move(receiver));
+        }
+
+        // mandatory get_env() method for sender
         constexpr auto get_env() const noexcept { return env{baseSched}; }
     };
 

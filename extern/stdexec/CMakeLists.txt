@@ -6,11 +6,12 @@ message(STATUS "Building stdexec as part of the CoroutineTests project")
 
 # Declare where to get stdexec from.
 set(COROUTINETESTS_STDEXEC_SOURCE
-    "URL;https://github.com/NVIDIA/stdexec/archive/refs/tags/nvhpc-25.09.tar.gz;URL_MD5;e385824bb560a3ac36ce859a2e3ded1f"
+    "URL;https://github.com/NVIDIA/stdexec/archive/refs/tags/nvhpc-26.05.tar.gz;URL_MD5;14d830d378be7cf687df97b1c0312c39"
     CACHE STRING "Source for stdexec, when built as part of this project")
 
 mark_as_advanced(COROUTINETESTS_STDEXEC_SOURCE)
-FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE})
+FetchContent_Declare(stdexec SYSTEM ${COROUTINETESTS_STDEXEC_SOURCE}
+                    PATCH_COMMAND patch -N -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/tbb_find.patch")
 
 # Turn off build tests, examples, and docs.
 set(STDEXEC_BUILD_EXAMPLES FALSE)
