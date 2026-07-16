@@ -21,21 +21,21 @@ tool::Task<void> child(std::string_view parent,
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
     CoroutineTests::Threadpool threadpool(2);
     auto scheduler = [&threadpool](std::coroutine_handle<> handle) {
-        log() << "scheduler Schedule called, enqueuing execution" << std::endl;
+        log("Scheduler") << "Schedule called, enqueuing execution" << std::endl;
         threadpool.enqueue_task(handle);
     };
 
     CoroutineTests::alien::counting_scope scope;
-    log() << "main Spawning work" << std::endl;
+    log("main") << "Spawning work" << std::endl;
     scope.spawn(scheduler, child("main", std::chrono::milliseconds(20)));
     scope.spawn(scheduler, child("main", std::chrono::milliseconds(50)));
     scope.spawn(scheduler, child("main", std::chrono::milliseconds(10)));
 
-    log() << "main Waiting for scope to become empty" << std::endl;
+    log("main") << "Waiting for scope to become empty" << std::endl;
     scope.join();
-    log() << "main Done" << std::endl;
+    log("main") << "Done" << std::endl;
     return 0;
 }

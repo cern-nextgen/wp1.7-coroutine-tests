@@ -94,7 +94,7 @@ boost::capy::task<algs::StatusCode> algorithm_execute(std::string_view parent) {
 }
 
 int main() {
-    log() << "main Starting" << std::endl;
+    log("main") << "Starting" << std::endl;
 
     auto arena = tbb::task_arena(2);
     auto context = TaskArenaContext(arena);
@@ -109,11 +109,11 @@ int main() {
 
     boost::capy::run_async(executor, result_handler)(algorithm_execute("main"));
 
-    log() << "main waiting for algorithm to finish..." << std::endl;
+    log("main") << "Waiting for algorithm to finish..." << std::endl;
     done.wait();
 
     log() << "Final status of algorithm " << final_result << std::endl;
     // Block until all work items in the scope are done
-    log() << "main Done" << std::endl;
+    log("main") << "Done" << std::endl;
     return EXIT_SUCCESS;
 }
