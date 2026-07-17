@@ -1,11 +1,11 @@
 #pragma once
 
-#include "nvtx3/nvtx3.hpp"
+#include <nvtx3/nvtx3.hpp>
 
 namespace CoroutineTests::nvtx_utils {
 namespace detail {
 struct domain {
-    static constexpr char const* name{"WP1.7"};
+    static constexpr char const* name{"CoroutineTests"};
 };
 
 using range_t = nvtx3::scoped_range_in<domain>;
@@ -23,21 +23,19 @@ inline nvtx3::rgb get_color(uint i) {
     component_t b = ((i * 71) + CERNBlue.blue) & 0xFF;
     return nvtx3::rgb{r, g, b};
 }
+
+inline nvtx3::event_attributes get_attributes(std::string name, uint i) {
+    return nvtx3::event_attributes{get_category(), get_color(i), name,
+                                   nvtx3::payload{i}};
+}
 }  // namespace detail
-inline detail::range_t make_range(std::string name, uint i=0) {
-    return detail::range_t(name, detail::get_category(), detail::get_color(i), nvtx3::payload{i});
+inline detail::range_t make_range(std::string name, uint i) {
+    return detail::range_t(name, detail::get_category(), detail::get_color(i),
+                           nvtx3::payload{i});
 }
 
-inline void make_c_range(std::string name, uint i=0) {
-    auto attr = nvtxEventAttributes_t{};
-    attr.version = NVTX_VERSION;
-    attr.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-    attr.colorType = NVTX_COLOR_ARGB;
-    attr.color = 0xFF000000 | (detail::get_color(i).red << 16) |
-                 (detail::get_color(i).green << 8) | detail::get_color(i).blue;
-    attr.messageType = NVTX_MESSAGE_TYPE_ASCII;
-    attr.message.ascii = name.c_str();
-    nvtxRangePushEx(&attr);
+inline detail::range_t make_range(std::string name) {
+    return detail::range_t(name);
 }
 
 }  // namespace CoroutineTests::nvtx_utils

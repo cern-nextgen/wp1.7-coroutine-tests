@@ -98,7 +98,6 @@ int main() {
 
     auto arena = tbb::task_arena(2);
     auto context = TaskArenaContext(arena);
-    auto executor = TaskArenaExecutor(context);
 
     auto final_result = algs::StatusCode{};
     auto done = std::latch{1};
@@ -107,7 +106,9 @@ int main() {
         done.count_down();
     };
 
-    boost::capy::run_async(executor, result_handler)(algorithm_execute("main"));
+    boost::capy::run_async(
+        TaskArenaExecutor(context, "alg", CoroutineTests::EventContext{0, 0}),
+        result_handler)(algorithm_execute("main"));
 
     log("main") << "Waiting for algorithm to finish..." << std::endl;
     done.wait();
