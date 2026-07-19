@@ -6,6 +6,7 @@
 #include <coroutine>
 #include <memory>
 #include <string_view>
+#include <vector>
 
 #include "CoroutineTests/auditor.hpp"        // Auditor
 #include "CoroutineTests/event_context.hpp"  // EventContext
