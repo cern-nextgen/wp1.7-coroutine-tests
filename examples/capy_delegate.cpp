@@ -13,6 +13,8 @@
 #include "capy_task_arena_executor.hpp"  // TaskArenaExecutor
 #include "logging_utils.hpp"             // log, format_name
 #include "nanospin.hpp"                  // launch_nanospin
+#include "nvtx_auditor.hpp"              // NvtxAuditor
+#include "nvtx_utils.hpp"                // make_range
 #include "statuscode.hpp"                // StatusCodeImpl
 
 namespace tools {
@@ -192,14 +194,17 @@ int main() {
     }
 
     log("main") << "Starting" << std::endl;
+    auto main_range = CoroutineTests::nvtx_utils::make_range("main");
 
     auto task_arena = tbb::task_arena{2, 0};
     auto context = TaskArenaContext(task_arena);
-    auto executor = TaskArenaExecutor(context);
+    context.add_auditor(std::make_unique<NvtxAuditor>());
     auto delegation_thread = boost::capy::thread_pool(1);
 
     {
         std::cout << "--- Single event, synchronous wait for completion ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Single event processing");
         cudaStream_t stream;
         ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         auto final_result = tools::StatusCode{};
@@ -210,8 +215,10 @@ int main() {
         };
 
         log("main") << "Launching algorithm..." << std::endl;
-        boost::capy::run_async(executor, result_handler)(
-            reconstruct(stream, delegation_thread, "main"));
+        boost::capy::run_async(
+            TaskArenaExecutor(context, "alg",
+                              CoroutineTests::EventContext{0, 0}),
+            result_handler)(reconstruct(stream, delegation_thread, "main"));
         done.wait();
         log("main") << "Final status of algorithm " << final_result << ""
                     << std::endl;
@@ -219,7 +226,9 @@ int main() {
     }
 
     {
-        std::cout << "--- Multiple events, wait for all to complete ---\n ";
+        std::cout << "--- Multiple events, wait for all to complete ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Multiple event processing");
 
         auto streams = std::vector<cudaStream_t>(2);
         auto status = std::vector<tools::StatusCode>(streams.size());
@@ -242,8 +251,11 @@ int main() {
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
-            boost::capy::run_async(executor, result_handler)(reconstruct(
-                streams.at(i), delegation_thread, "event" + std::to_string(i)));
+            boost::capy::run_async(
+                TaskArenaExecutor(context, "alg",
+                                  CoroutineTests::EventContext{i, i}),
+                result_handler)(reconstruct(streams.at(i), delegation_thread,
+                                            "event" + std::to_string(i)));
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
