@@ -35,15 +35,17 @@ execution::task<void> Outer(std::string_view parent) {
 int main() {
     log("main") << "Starting" << std::endl;
     tbb::task_arena arena{1};
-    execution::scheduler auto scheduler = get_scheduler(arena);
+    TaskArenaContext context{arena};
 
     std::cout << "----------------------------------------" << std::endl;
     log("main") << "Coroutine execution" << std::endl;
-    execution::sync_wait(execution::starts_on(scheduler, Outer("main")));
+    execution::sync_wait(execution::starts_on(
+        TaskArenaScheduler{context, "coroutine", {0, 0}}, Outer("main")));
 
     std::cout << "----------------------------------------" << std::endl;
     log("main") << "Sender execution" << std::endl;
 
+    auto scheduler = TaskArenaScheduler{context, "sender", {0, 0}};
     auto work =
         execution::just() | execution::then([]() {
             log("Left") << "Starting and Finishing" << std::endl;

@@ -1,12 +1,15 @@
 #include <cuda_runtime_api.h>
 #include <tbb/task_arena.h>
 
-#include "exec_backend.hpp"               // std exec backend selection
-#include "exec_stream_await_sender.hpp"   // stream_await_sender
-#include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
-#include "logging_utils.hpp"              // log, format_name
-#include "nanospin.hpp"                   // launch_nanospin
-#include "statuscode.hpp"                 // StatusCodeImpl
+#include "CoroutineTests/event_context.hpp"  // EventContext
+#include "exec_backend.hpp"                  // std exec backend selection
+#include "exec_stream_await_sender.hpp"      // stream_await_sender
+#include "exec_task_arena_scheduler.hpp"     // TaskArenaScheduler
+#include "logging_utils.hpp"                 // log, format_name
+#include "nanospin.hpp"                      // launch_nanospin
+#include "nvtx_auditor.hpp"                  // NvtxAuditor
+#include "nvtx_utils.hpp"                    // make_range
+#include "statuscode.hpp"                    // StatusCodeImpl
 
 namespace tools {
 struct Tag {
@@ -155,18 +158,25 @@ int main() {
     }
 
     log("main") << "Starting" << std::endl;
+    auto main_range = CoroutineTests::nvtx_utils::make_range("main");
 
     tbb::task_arena task_arena{2, 0};
-    execution::scheduler auto scheduler = get_scheduler(task_arena, false);
+    TaskArenaContext context{task_arena, false};
+    context.add_auditor(std::make_shared<NvtxAuditor>());
 
     {
         cudaStream_t stream;
         ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         std::cout << "--- Single event, synchronous wait for completion ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Single event processing");
         log("main") << "Launching algorithm..." << std::endl;
         auto [status] =
             execution::sync_wait(
-                execution::starts_on(scheduler, reconstruct(stream, "main")))
+                execution::starts_on(
+                    TaskArenaScheduler{context, "alg",
+                                       CoroutineTests::EventContext{0, 0}},
+                    reconstruct(stream, "main")))
                 .value();
         log("main") << "Final status of algorithm " << status << ""
                     << std::endl;
@@ -175,6 +185,8 @@ int main() {
 
     {
         std::cout << "--- Multiple events, wait for all to complete ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Multiple event processing");
 
         auto streams = std::vector<cudaStream_t>(2);
         auto status = std::vector<tools::StatusCode>(streams.size());
@@ -194,7 +206,9 @@ int main() {
             status = co_await reconstruct(stream, name);
         };
         for (std::size_t i = 0; i < streams.size(); ++i) {
-            scope.spawn(scheduler, payload(streams, status, i));
+            scope.spawn(TaskArenaScheduler{context, "alg",
+                                           CoroutineTests::EventContext{i, 0}},
+                        payload(streams, status, i));
         }
         execution::sync_wait(scope.join());
 
