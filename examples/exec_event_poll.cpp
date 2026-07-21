@@ -10,10 +10,15 @@
 #include <stdexec/execution.hpp>
 #include <string_view>
 
-#include "exec_task_arena_scheduler.hpp"  // TaskArenaScheduler
-#include "logging_utils.hpp"              // log, format_name
-#include "nanospin.hpp"                   // launch_nanospin
-#include "statuscode.hpp"                 // StatusCodeImpl
+#include "CoroutineTests/event_context.hpp"  // EventContext
+#include "exec_backend.hpp"                  // std exec backend selection
+#include "exec_stream_await_sender.hpp"      // stream_await_sender
+#include "exec_task_arena_scheduler.hpp"     // TaskArenaScheduler
+#include "logging_utils.hpp"                 // log, format_name
+#include "nanospin.hpp"                      // launch_nanospin
+#include "nvtx_auditor.hpp"                  // NvtxAuditor
+#include "nvtx_utils.hpp"                    // make_range
+#include "statuscode.hpp"                    // StatusCodeImpl
 
 namespace tools {
 struct Tag {
@@ -235,7 +240,8 @@ int main() {
     log("main") << "Starting" << std::endl;
 
     tbb::task_arena task_arena{2, 0};
-    execution::scheduler auto scheduler = get_scheduler(task_arena, false);
+    TaskArenaContext context{task_arena, false};
+    context.add_auditor(std::make_shared<NvtxAuditor>());
     exec::single_thread_context delegation_context;
 
     {
@@ -245,11 +251,14 @@ int main() {
         ERROR_CHECK_CUDA(
             cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
         std::cout << "--- Single event, synchronous wait for completion ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Single event processing");
         log("main") << "Launching algorithm..." << std::endl;
         auto [status] =
             stdexec::sync_wait(
                 stdexec::starts_on(
-                    scheduler,
+                    TaskArenaScheduler{context, "alg",
+                                       CoroutineTests::EventContext{0, 0}},
                     reconstruct(stream, event, delegation_context, "main")))
                 .value();
         log("main") << "Final status of algorithm " << status << ""
@@ -260,6 +269,8 @@ int main() {
 
     {
         std::cout << "--- Multiple events, wait for all to complete ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Multiple event processing");
 
         auto streams = std::vector<cudaStream_t>(2);
         auto events = std::vector<cudaEvent_t>(streams.size());
@@ -286,7 +297,8 @@ int main() {
         };
         for (std::size_t i = 0; i < streams.size(); ++i) {
             scope.spawn(stdexec::starts_on(
-                scheduler,
+                TaskArenaScheduler{context, "alg",
+                                   CoroutineTests::EventContext{i, 0}},
                 payload(streams, events, status, i, delegation_context)));
         }
         stdexec::sync_wait(scope.on_empty());

@@ -98,7 +98,7 @@ int main() {
     log("main") << "Starting" << std::endl;
 
     tbb::task_arena arena{2};
-    execution::scheduler auto scheduler = get_scheduler(arena);
+    TaskArenaContext context{arena};
 
     // Start executing the algorithm without blocking main
     Scope scope;
@@ -107,7 +107,9 @@ int main() {
         auto status = co_await algorithm_execute("main");
         log() << "Final status of algorithm " << status << std::endl;
     }();
-    scope.spawn(scheduler, std::move(work));
+    scope.spawn(TaskArenaScheduler(context, "algorithm",
+                                   CoroutineTests::EventContext{0, 0}),
+                std::move(work));
 
     // Sleep a bit to show that algorithm is already running
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
