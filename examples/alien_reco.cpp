@@ -11,6 +11,7 @@
 #include "alien_stream_await.hpp"  // StreamAwaitable
 #include "logging_utils.hpp"       // log, format_name
 #include "nanospin.hpp"            // launch_nanospin
+#include "nvtx_utils.hpp"          // make_range
 
 #define ERROR_CHECK_CUDA(EXP)                                              \
     do {                                                                   \
@@ -137,6 +138,24 @@ tool::Task<tool::StatusCode> reconstruct(cudaStream_t stream,
     co_return tool::StatusCode::SUCCESS;
 }
 
+class Scheduler {
+    public:
+    Scheduler(tbb::task_arena& arena, std::string name, int event_id)
+        : m_arena{arena}, m_name{std::move(name)}, event_id{event_id} {}
+
+    void operator()(std::coroutine_handle<> handle) const {
+        m_arena.enqueue([handle, this]() {
+            CoroutineTests::nvtx_utils::make_range(m_name, event_id);
+            handle.resume();
+        });
+    }
+
+    private:
+    tbb::task_arena& m_arena;
+    std::string m_name;
+    int event_id;
+};
+
 int main() {
     int deviceCount = 0;
     auto error_id = cudaGetDeviceCount(&deviceCount);
@@ -154,19 +173,19 @@ int main() {
     }
 
     log("main") << "Starting" << std::endl;
+    auto main_range = CoroutineTests::nvtx_utils::make_range("main");
 
     tbb::task_arena task_arena{2, 0};
-
-    auto scheduler = [&task_arena](std::coroutine_handle<> handle) {
-        task_arena.enqueue([handle]() { handle.resume(); });
-    };
 
     {
         cudaStream_t stream;
         ERROR_CHECK_CUDA(cudaStreamCreate(&stream));
         std::cout << "--- Single event, synchronous wait for completion ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Single event processing");
         log("main") << "Launching algorithm..." << std::endl;
-        auto status = sync_wait(scheduler, reconstruct(stream, "main"));
+        auto status = sync_wait(Scheduler(task_arena, "alg", 0),
+                                reconstruct(stream, "main"));
         log("main") << "Final status of algorithm " << status << ""
                     << std::endl;
         ERROR_CHECK_CUDA(cudaStreamDestroy(stream));
@@ -174,6 +193,8 @@ int main() {
 
     {
         std::cout << "--- Multiple events, wait for all to complete ---\n";
+        auto processing_range =
+            CoroutineTests::nvtx_utils::make_range("Multiple event processing");
 
         auto streams = std::vector<cudaStream_t>(2);
         auto status = std::vector<tool::StatusCode>(streams.size());
@@ -193,7 +214,8 @@ int main() {
             status = co_await reconstruct(stream, name);
         };
         for (std::size_t i = 0; i < streams.size(); ++i) {
-            scope.spawn(scheduler, payload(streams, status, i));
+            scope.spawn(Scheduler(task_arena, "alg", i),
+                        payload(streams, status, i));
         }
         scope.join();
 
