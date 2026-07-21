@@ -238,6 +238,7 @@ int main() {
     }
 
     log("main") << "Starting" << std::endl;
+    auto main_range = CoroutineTests::nvtx_utils::make_range("main");
 
     tbb::task_arena task_arena{2, 0};
     TaskArenaContext context{task_arena, false};
