@@ -4,7 +4,6 @@
 
 #ifdef USE_BEMAN
 #include <beman/execution/execution.hpp>
-#include <beman/task/task.hpp>
 #include <iostream>
 namespace execution = beman::execution;
 #else

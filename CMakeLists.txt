@@ -35,28 +35,28 @@ if(BUILD_STDEXEC)
   endif()
 endif()
 
-### beman.task  options
+### beman.execution  options
 
-option(BUILD_BEMAN_TASK "Build the beman.task sources included in CoroutineTests" TRUE)
+option(BUILD_BEMAN_EXECUTION "Build the beman.execution sources included in CoroutineTests" TRUE)
 
 if (USE_SYSTEM_LIBS)
-  set(USE_SYSTEM_BEMAN_TASK_DEFAULT ON)
+  set(USE_SYSTEM_BEMAN_EXECUTION_DEFAULT ON)
 else()
-  set(USE_SYSTEM_BEMAN_TASK_DEFAULT OFF)
+  set(USE_SYSTEM_BEMAN_EXECUTION_DEFAULT OFF)
 endif()
-option(USE_SYSTEM_BEMAN_TASK
-  "Pick up an existing installation of beman.task from the build environment"
-  ${USE_SYSTEM_BEMAN_TASK_DEFAULT})
-unset(USE_SYSTEM_BEMAN_TASK_DEFAULT)
+option(USE_SYSTEM_BEMAN_EXECUTION
+  "Pick up an existing installation of beman.execution from the build environment"
+  ${USE_SYSTEM_BEMAN_EXECUTION_DEFAULT})
+unset(USE_SYSTEM_BEMAN_EXECUTION_DEFAULT)
 
-if(BUILD_BEMAN_TASK)
+if(BUILD_BEMAN_EXECUTION)
   if(CMAKE_CXX_STANDARD LESS 23)
-    message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}. Must be at least C++23 for Beman.task.")
+    message(FATAL_ERROR "Unsupported C++ standard: ${CMAKE_CXX_STANDARD}. Must be at least C++23 for Beman.execution.")
   endif()
-  if(USE_SYSTEM_BEMAN_TASK)
-    find_package(beman_task REQUIRED)
+  if(USE_SYSTEM_BEMAN_EXECUTION)
+    find_package(beman_execution REQUIRED)
   else()
-    add_subdirectory(extern/beman_task)
+    add_subdirectory(extern/beman_execution)
   endif()
 endif()
 
