@@ -14,7 +14,7 @@ class stream_await_sender {
     template <execution::receiver Receiver>
     class stream_await_operation;
 
-    using sender_concept = execution::sender_t;
+    using sender_concept = execution::sender_tag;
     using completion_signatures =
         execution::completion_signatures<execution::set_value_t(cudaError_t)>;
 
@@ -37,7 +37,7 @@ class stream_await_sender {
 template <execution::receiver Receiver>
 class stream_await_sender::stream_await_operation {
     public:
-    using operation_state_concept = execution::operation_state_t;
+    using operation_state_concept = execution::operation_state_tag;
 
     stream_await_operation(Receiver&& recv, const cudaStream_t stream)
         : m_receiver(std::forward<Receiver>(recv)), m_stream(stream) {}

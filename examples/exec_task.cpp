@@ -28,7 +28,7 @@ using StatusCode = StatusCodeImpl<Tag>;
 template <execution::scheduler BaseScheduler>
 struct VerboseScheduler {
     BaseScheduler baseSched;
-    using scheduler_concept = execution::scheduler_t;
+    using scheduler_concept = execution::scheduler_tag;
 
     struct env {
         BaseScheduler baseSched;
@@ -45,7 +45,7 @@ struct VerboseScheduler {
         BaseScheduler baseSched;
 
         // mandatory type alias for sender
-        using sender_concept = execution::sender_t;
+        using sender_concept = execution::sender_tag;
 
         // Build the actual sender pipeline once, share it between
         // connect() and completion-signature computation.

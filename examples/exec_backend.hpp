@@ -12,6 +12,12 @@ namespace execution = beman::execution;
 #include <stdexec/execution.hpp>
 namespace execution {
 using namespace stdexec;
+
+using sender_tag = stdexec::sender_t;
+using receiver_tag = stdexec::receiver_t;
+using scheduler_tag = stdexec::scheduler_t;
+using operation_state_tag = stdexec::operation_state_t;
+
 template <typename T>
 using task = exec::task<T>;
 using run_loop = execution::run_loop;

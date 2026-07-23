@@ -79,7 +79,7 @@ class TaskArenaScheduler {
     // workaround for beman.task accepting only 32 bit types for scheduler data
 
     public:
-    using scheduler_concept = execution::scheduler_t;
+    using scheduler_concept = execution::scheduler_tag;
 
     TaskArenaScheduler(TaskArenaContext& context, std::string_view name = {},
                        CoroutineTests::EventContext event_context = {})
@@ -108,7 +108,7 @@ class TaskArenaScheduler {
 
         std::shared_ptr<TaskArenaScheduler::SchedulerData> scheduler_data;
 
-        using operation_state_concept = execution::operation_state_t;
+        using operation_state_concept = execution::operation_state_tag;
 
         void start() & noexcept {
             context->enqueue(std::move(receiver), scheduler_data->name,
@@ -128,7 +128,7 @@ struct TaskArenaScheduler::Sender {
 
     TaskArenaScheduler scheduler;
 
-    using sender_concept = execution::sender_t;
+    using sender_concept = execution::sender_tag;
 
     using completion_signatures =
         execution::completion_signatures<execution::set_value_t()>;

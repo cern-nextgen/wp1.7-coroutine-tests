@@ -12,7 +12,7 @@ struct TimerSender {
     std::string_view parent;
 
     // mandatory type aliases for sender
-    using sender_concept = execution::sender_t;
+    using sender_concept = execution::sender_tag;
     using completion_signatures =
         execution::completion_signatures<execution::set_value_t(StatusCode)>;
 
@@ -25,7 +25,7 @@ struct TimerSender {
         std::string_view parent;
 
         // mandatory type alias for operation state
-        using operation_state_concept = execution::operation_state_t;
+        using operation_state_concept = execution::operation_state_tag;
 
         // mandatory start() method for operation state
         // mockup the async operation using a detached thread, then set value
