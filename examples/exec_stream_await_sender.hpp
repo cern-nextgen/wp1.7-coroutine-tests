@@ -56,7 +56,7 @@ class stream_await_sender::stream_await_operation {
     std::remove_cvref_t<Receiver> m_receiver;
     cudaStream_t m_stream;
 
-    static void callback(void* userData) {
+    static void CUDART_CB callback(void* userData) {
         auto& recv = *static_cast<Receiver*>(userData);
         execution::set_value(std::move(recv), cudaSuccess);
     }
