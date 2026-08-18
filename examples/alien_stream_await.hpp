@@ -28,7 +28,7 @@ class StreamAwaitable {
     cudaError_t m_error = cudaSuccess;
 
     template <typename Promise>
-    static void resumption_callback(void* userData) {
+    static void CUDART_CB resumption_callback(void* userData) {
         auto handle = std::coroutine_handle<Promise>::from_address(userData);
         handle.promise().reschedule();
     }

@@ -32,7 +32,7 @@ class StreamIoAwaitable {
     cudaError_t m_error = cudaSuccess;
     context m_context;
 
-    static void resumption_callback(void* userData) {
+    static void CUDART_CB resumption_callback(void* userData) {
         auto* ctx = static_cast<context*>(userData);
         ctx->env->executor.post(ctx->continuation);
     }
